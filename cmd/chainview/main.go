@@ -37,8 +37,16 @@ func run() error {
 	client := chain.NewClient(networks)
 	defer client.Close()
 
+	// La variable de entorno tiene prioridad sobre el TOML para no obligar a
+	// dejar la API key en un archivo.
+	apiKey := cfg.EtherscanAPIKey
+	if env := os.Getenv("ETHERSCAN_API_KEY"); env != "" {
+		apiKey = env
+	}
+	txProvider := chain.NewEtherscanProvider(apiKey)
+
 	refresh := time.Duration(cfg.RefreshSeconds) * time.Second
-	m := ui.NewModel(client, wallets, networks, refresh)
+	m := ui.NewModel(client, wallets, networks, refresh, txProvider)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return err
 	}

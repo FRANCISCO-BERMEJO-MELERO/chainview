@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/chain"
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/storage"
@@ -21,6 +22,7 @@ const (
 	stateIdle loadState = iota
 	stateLoading
 	stateLoaded
+	stateError
 )
 
 // tab identifica cada pestaña navegable de la TUI.
@@ -49,11 +51,12 @@ func (t tab) title() string {
 
 // Model es el modelo raíz de la TUI (patrón Elm).
 type Model struct {
-	styles   Styles
-	client   *chain.Client
-	wallets  *storage.Wallets
-	networks []chain.Network
-	refresh  time.Duration
+	styles     Styles
+	client     *chain.Client
+	wallets    *storage.Wallets
+	networks   []chain.Network
+	refresh    time.Duration
+	txProvider chain.TxProvider
 
 	spinner spinner.Model
 	active  tab
@@ -69,12 +72,20 @@ type Model struct {
 	balState   loadState
 	balResults []chain.BalanceResult
 	balCursor  int
+
+	// Pestaña Transacciones
+	txChainID uint64
+	txState   loadState
+	txs       []chain.Tx
+	txErr     error
+	txCursor  int
+	txWallet  common.Address
 }
 
 // NewModel construye el modelo raíz inyectando todas las dependencias: cliente
 // de cadena, almacenamiento de wallets, redes efectivas (con overrides de config)
 // e intervalo de refresco.
-func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration) Model {
+func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider) Model {
 	styles := DefaultStyles()
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Dot),
@@ -90,14 +101,17 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	ti.Focus() // arrancamos en la pestaña Cuentas, con el input listo
 
 	return Model{
-		styles:   styles,
-		client:   client,
-		wallets:  wallets,
-		networks: networks,
-		refresh:  refresh,
-		spinner:  sp,
-		input:    ti,
-		active:   tabAccounts,
+		styles:     styles,
+		client:     client,
+		wallets:    wallets,
+		networks:   networks,
+		refresh:    refresh,
+		txProvider: txProvider,
+		spinner:    sp,
+		input:      ti,
+		active:     tabAccounts,
+		// El historial de txs en la v1 se consulta sobre Ethereum mainnet.
+		txChainID: chain.ChainEthereum,
 	}
 }
 
@@ -137,6 +151,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateAccounts(msg)
 		case tabBalances:
 			return m.updateBalances(msg)
+		case tabTransactions:
+			return m.updateTransactions(msg)
 		}
 		return m, nil
 
@@ -144,6 +160,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.balResults = msg.results
 		m.balState = stateLoaded
 		m.clampBalCursor()
+		return m, nil
+
+	case txsLoadedMsg:
+		// Descartamos resultados de una wallet que ya no es la seleccionada.
+		if msg.wallet == m.txWallet {
+			m.txs = msg.txs
+			m.txErr = nil
+			m.txState = stateLoaded
+			m.clampTxCursor()
+		}
+		return m, nil
+
+	case txsErrMsg:
+		if msg.wallet == m.txWallet {
+			m.txErr = msg.err
+			m.txState = stateError
+		}
 		return m, nil
 
 	case refreshTickMsg:
@@ -189,6 +222,9 @@ func (m *Model) onEnterTab() tea.Cmd {
 			m.balState = stateLoading
 			return tea.Batch(m.spinner.Tick, m.fetchBalancesCmd())
 		}
+	case tabTransactions:
+		m.input.Blur()
+		return m.loadTxsCmd()
 	default:
 		m.input.Blur()
 	}
@@ -234,8 +270,8 @@ func (m Model) renderBody() string {
 		content = m.renderAccounts()
 	case tabBalances:
 		content = m.renderBalances()
-	default:
-		content = "Aquí irá el historial de transacciones.\nPróximamente: últimas txs por wallet."
+	case tabTransactions:
+		content = m.renderTransactions()
 	}
 
 	panel := m.styles.Panel
@@ -251,6 +287,8 @@ func (m Model) helpLine() string {
 	case tabAccounts:
 		return "tab pestaña · enter añadir · ctrl+d borrar · ↑↓ seleccionar · ctrl+c salir"
 	case tabBalances:
+		return "tab pestaña · ↑↓ navegar · r recargar · q salir"
+	case tabTransactions:
 		return "tab pestaña · ↑↓ navegar · r recargar · q salir"
 	default:
 		return "tab pestaña · q salir"
