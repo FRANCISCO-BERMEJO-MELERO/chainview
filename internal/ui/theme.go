@@ -24,6 +24,8 @@ type Styles struct {
 	Panel       lipgloss.Style
 	Error       lipgloss.Style
 	Faint       lipgloss.Style
+	Spinner     lipgloss.Style
+	Balance     lipgloss.Style
 }
 
 // DefaultStyles devuelve el tema por defecto (violeta + verde menta).
@@ -54,5 +56,12 @@ func DefaultStyles() Styles {
 
 		Faint: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(colorFaint)),
+
+		Spinner: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorMint)),
+
+		Balance: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorMint)).
+			Bold(true),
 	}
 }
