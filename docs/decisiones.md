@@ -36,3 +36,24 @@ fetch que ya usamos al abrir la pestaña). WebSockets quedan como posible mejora
 
 > Nota de implementación: con publicnode (D1) + polling (D2) es fácil rozar el
 > rate-limit. Por eso D1 y D2 empujan juntas hacia la caché/backoff de la S9.
+
+## D3 — Fuente del historial de transacciones (Semana 5)
+
+**Contexto:** mostrar las últimas ~20 txs de una wallet. Opciones: la API de
+Etherscan (V2, key gratis) vs escanear bloques nosotros vía RPC.
+
+**Decisión:** **Etherscan API V2**. Endpoint unificado
+`https://api.etherscan.io/v2/api?chainid=<id>&...`: una sola API key gratis vale
+para Ethereum, Arbitrum, Base y Optimism cambiando solo el `chainid`.
+
+**Motivo:** escanear bloques para reconstruir el historial de una address es
+inviable sin un nodo indexado (habría que recorrer millones de bloques y filtrar
+logs). Etherscan ya lo tiene indexado y devuelve la lista lista para mostrar. El
+coste es depender de un tercero y de una API key, pero es gratis y el plan
+free (5 req/s) sobra para una TUI.
+
+**Cómo se configura la key:** vía `etherscan_api_key` en el TOML o la variable
+de entorno `ETHERSCAN_API_KEY` (esta última tiene prioridad, para no dejar la
+key en archivos). Sin key, la pestaña Transacciones muestra un aviso en la UI en
+lugar de romper. El acceso queda detrás de la interfaz `chain.TxProvider` para
+poder mockearlo en tests.
