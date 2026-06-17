@@ -15,6 +15,7 @@ const (
 // Semana 4 la config TOML podrá sobreescribirlo por red (p.ej. para usar
 // Alchemy/Infura en vez del RPC público).
 type Network struct {
+	Key      string // slug estable en minúsculas, p.ej. "ethereum" (clave de config)
 	Name     string // nombre legible, p.ej. "Ethereum"
 	ChainID  uint64 // identificador EIP-155 de la cadena
 	RPCURL   string // endpoint JSON-RPC por defecto
@@ -28,6 +29,7 @@ type Network struct {
 func DefaultNetworks() []Network {
 	return []Network{
 		{
+			Key:      "ethereum",
 			Name:     "Ethereum",
 			ChainID:  ChainEthereum,
 			RPCURL:   "https://ethereum-rpc.publicnode.com",
@@ -35,6 +37,7 @@ func DefaultNetworks() []Network {
 			Explorer: "https://etherscan.io",
 		},
 		{
+			Key:      "arbitrum",
 			Name:     "Arbitrum One",
 			ChainID:  ChainArbitrum,
 			RPCURL:   "https://arbitrum-one-rpc.publicnode.com",
@@ -42,6 +45,7 @@ func DefaultNetworks() []Network {
 			Explorer: "https://arbiscan.io",
 		},
 		{
+			Key:      "base",
 			Name:     "Base",
 			ChainID:  ChainBase,
 			RPCURL:   "https://base-rpc.publicnode.com",
@@ -49,6 +53,7 @@ func DefaultNetworks() []Network {
 			Explorer: "https://basescan.org",
 		},
 		{
+			Key:      "optimism",
 			Name:     "Optimism",
 			ChainID:  ChainOptimism,
 			RPCURL:   "https://optimism-rpc.publicnode.com",
