@@ -84,7 +84,9 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	ti := textinput.New()
 	ti.Placeholder = "0x… address EVM, luego Enter"
 	ti.Prompt = "› "
-	ti.CharLimit = 42
+	// Holgura sobre los 42 chars de una address para que un pegado con espacios
+	// alrededor no se trunque; el TrimSpace + validación al añadir lo sanean.
+	ti.CharLimit = 64
 	ti.Focus() // arrancamos en la pestaña Cuentas, con el input listo
 
 	return Model{
@@ -161,6 +163,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+
+	default:
+		// Mensajes que no manejamos arriba (pegado con bracketed paste vía
+		// tea.PasteMsg, parpadeo del cursor, etc.) se reenvían al textinput
+		// cuando estamos en Cuentas, que es quien sabe qué hacer con ellos.
+		if m.active == tabAccounts {
+			var cmd tea.Cmd
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
+		}
 	}
 	return m, nil
 }
