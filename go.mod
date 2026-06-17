@@ -3,6 +3,7 @@ module github.com/FRANCISCO-BERMEJO-MELERO/chainview
 go 1.25.0
 
 require (
+	charm.land/bubbles/v2 v2.1.0
 	charm.land/bubbletea/v2 v2.0.7
 	charm.land/lipgloss/v2 v2.0.4
 	github.com/ethereum/go-ethereum v1.17.3
