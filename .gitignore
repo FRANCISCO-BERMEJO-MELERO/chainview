@@ -1,0 +1,31 @@
+# Contexto del agente IA (no es parte del repo público)
+context.md
+tasks.json
+
+# Binarios y artefactos de build
+/bin/
+/dist/
+/chainview
+/cmd/chainview/chainview
+
+# Tests y cobertura
+*.out
+coverage.out
+coverage.html
+
+# Secretos / API keys (Alchemy, Infura, Etherscan) y config local
+.env
+.env.*
+config.local.toml
+*.local.toml
+
+# Go workspace (local, no se versiona)
+go.work
+go.work.sum
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
