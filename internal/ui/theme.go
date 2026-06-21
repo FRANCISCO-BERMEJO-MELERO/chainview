@@ -1,6 +1,10 @@
 package ui
 
-import "charm.land/lipgloss/v2"
+import (
+	"charm.land/lipgloss/v2"
+
+	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/chain"
+)
 
 // Paleta de chainview: violeta como color de marca + verde menta como acento.
 // Se definen como constantes para tener un único punto de verdad de los colores;
@@ -15,6 +19,13 @@ const (
 	colorBorder = "#3F3F5A" // bordes de paneles
 	colorSelBg  = "#332B57" // fondo de la fila seleccionada (barra violeta tenue)
 	colorSelFg  = "#F5F3FF" // texto sobre la fila seleccionada
+	colorAmber  = "#FBBF24" // tx saliente (tag OUT)
+
+	// Colores de marca de cada red, para el badge de la columna "Red".
+	colorEth  = "#7C8CF0" // Ethereum (azul-violeta)
+	colorArb  = "#28A0F0" // Arbitrum (azul)
+	colorBase = "#3C7DFF" // Base (azul)
+	colorOp   = "#FF5C5C" // Optimism (rojo)
 )
 
 // Styles agrupa todos los estilos reutilizables de la TUI. Se construye una vez
@@ -43,6 +54,14 @@ type Styles struct {
 	RowSelected lipgloss.Style // barra de la fila seleccionada en una tabla
 	Symbol      lipgloss.Style // símbolo de moneda / dato secundario en una tabla
 	Ok          lipgloss.Style // estado correcto (✓ verde)
+
+	// Tags de tipo de tx (entrante/saliente/…) y badges de red.
+	TagIn   lipgloss.Style
+	TagOut  lipgloss.Style
+	TagSelf lipgloss.Style
+	TagCall lipgloss.Style
+	TagNew  lipgloss.Style
+	Badges  map[uint64]lipgloss.Style // chain ID -> estilo del badge de red
 }
 
 // DefaultStyles devuelve el tema por defecto (violeta + verde menta).
@@ -131,5 +150,20 @@ func DefaultStyles() Styles {
 
 		Ok: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(colorGreen)),
+
+		// Tags de tipo: el color refuerza el significado (verde recibe, ámbar
+		// envía), pero el texto/símbolo siempre acompaña (no solo color).
+		TagIn:   lipgloss.NewStyle().Foreground(lipgloss.Color(colorGreen)).Bold(true),
+		TagOut:  lipgloss.NewStyle().Foreground(lipgloss.Color(colorAmber)).Bold(true),
+		TagSelf: lipgloss.NewStyle().Foreground(lipgloss.Color(colorFaint)),
+		TagCall: lipgloss.NewStyle().Foreground(lipgloss.Color(colorMint)),
+		TagNew:  lipgloss.NewStyle().Foreground(lipgloss.Color(colorViolet)).Bold(true),
+
+		Badges: map[uint64]lipgloss.Style{
+			chain.ChainEthereum: lipgloss.NewStyle().Foreground(lipgloss.Color(colorEth)).Bold(true),
+			chain.ChainArbitrum: lipgloss.NewStyle().Foreground(lipgloss.Color(colorArb)).Bold(true),
+			chain.ChainBase:     lipgloss.NewStyle().Foreground(lipgloss.Color(colorBase)).Bold(true),
+			chain.ChainOptimism: lipgloss.NewStyle().Foreground(lipgloss.Color(colorOp)).Bold(true),
+		},
 	}
 }
