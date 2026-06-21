@@ -47,6 +47,13 @@ func (m Model) renderFrame() string {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, msg)
 	}
 
+	// La portada de bienvenida ocupa todo el frame (logo centrado), sin tabs ni
+	// barra de estado: es una pantalla aparte hasta que el usuario entra.
+	if m.showWelcome {
+		welcome := lipgloss.Place(m.contentW, m.height-2, lipgloss.Center, lipgloss.Center, m.renderWelcome())
+		return m.styles.Frame.Width(m.width).Render(welcome)
+	}
+
 	iw := m.contentW
 	rule := m.styles.Rule.Render(strings.Repeat("─", iw))
 

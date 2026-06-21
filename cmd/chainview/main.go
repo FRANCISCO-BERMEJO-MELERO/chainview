@@ -33,6 +33,11 @@ func run() error {
 		return err
 	}
 
+	prefs, err := storage.LoadPrefs()
+	if err != nil {
+		return err
+	}
+
 	networks := cfg.Networks()
 	client := chain.NewClient(networks)
 	defer client.Close()
@@ -55,7 +60,7 @@ func run() error {
 	ens := chain.NewENSResolver(client)
 
 	refresh := time.Duration(cfg.RefreshSeconds) * time.Second
-	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens)
+	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prefs)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return err
 	}
