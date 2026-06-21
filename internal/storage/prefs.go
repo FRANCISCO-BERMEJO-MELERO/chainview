@@ -25,6 +25,31 @@ type Prefs struct {
 	// HideWelcome indica que el usuario pidió no volver a ver la pantalla de
 	// bienvenida al arrancar.
 	HideWelcome bool `json:"hide_welcome"`
+
+	// EnabledChains son los chain IDs que el usuario quiere ver. Vacío o ausente
+	// significa "todas las redes del catálogo activas" (comportamiento por
+	// defecto, para que una instalación nueva no cambie de aspecto).
+	EnabledChains []uint64 `json:"enabled_chains"`
+}
+
+// IsChainEnabled indica si una red debe mostrarse. Con la lista vacía (default),
+// todas las redes están activas.
+func (p *Prefs) IsChainEnabled(id uint64) bool {
+	if len(p.EnabledChains) == 0 {
+		return true
+	}
+	for _, c := range p.EnabledChains {
+		if c == id {
+			return true
+		}
+	}
+	return false
+}
+
+// SetEnabledChains fija el conjunto explícito de redes activas y lo persiste.
+func (p *Prefs) SetEnabledChains(ids []uint64) error {
+	p.EnabledChains = ids
+	return p.save()
 }
 
 // LoadPrefs resuelve la ruta XDG y carga las preferencias guardadas. Un archivo
