@@ -116,7 +116,7 @@ func (m Model) contextHint() string {
 		if m.txDetailOpen {
 			return "↑↓ desplazar · esc cerrar"
 		}
-		return "↑↓ mover · enter detalle · r recargar"
+		return "↑↓ · enter detalle · r recargar"
 	}
 	return ""
 }
