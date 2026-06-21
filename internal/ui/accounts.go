@@ -26,7 +26,7 @@ func (m Model) updateAccounts(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.input.Reset()
 		m.balState = stateIdle // forzar recarga de balances con la nueva wallet
 		m.clampAccCursor()
-		return m, nil
+		return m, m.resolveWalletNamesCmd() // resolver el ENS de la nueva wallet
 
 	case "ctrl+d", "delete":
 		addrs := m.wallets.List()
@@ -95,10 +95,16 @@ func (m Model) renderAccounts() string {
 	}
 
 	for i, a := range addrs {
+		// Con ENS mostramos el nombre como principal y la address como secundaria;
+		// sin ENS, la address completa (es el dato canónico de la wallet).
+		label := a.Hex()
+		if name := m.ensNames[a]; name != "" {
+			label = name + " (" + shortAddr(a) + ")"
+		}
 		if i == m.accCursor {
-			b.WriteString(m.styles.Balance.Render("› " + a.Hex()))
+			b.WriteString(m.styles.Balance.Render("› " + label))
 		} else {
-			b.WriteString("  " + a.Hex())
+			b.WriteString("  " + label)
 		}
 		b.WriteString("\n")
 	}

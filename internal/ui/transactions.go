@@ -176,7 +176,7 @@ func (m Model) renderTransactions() string {
 		return m.styles.Faint.Render("Añade wallets en la pestaña Cuentas para ver sus transacciones.")
 	}
 
-	header := m.styles.Faint.Render("Wallet "+shortAddr(m.txWallet)+" · "+m.networkName(m.txChainID)) + "\n\n"
+	header := m.styles.Faint.Render("Wallet "+m.displayName(m.txWallet)+" · "+m.networkName(m.txChainID)) + "\n\n"
 
 	switch {
 	case m.txState == stateLoading && len(m.txs) == 0:

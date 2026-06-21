@@ -57,6 +57,11 @@ type Model struct {
 	networks   []chain.Network
 	refresh    time.Duration
 	txProvider chain.TxProvider
+	ens        *chain.ENSResolver
+
+	// ensNames cachea en el Model los nombres ENS ya resueltos (address -> nombre)
+	// para mostrarlos sin tocar la red en el render.
+	ensNames map[common.Address]string
 
 	spinner spinner.Model
 	active  tab
@@ -85,7 +90,7 @@ type Model struct {
 // NewModel construye el modelo raíz inyectando todas las dependencias: cliente
 // de cadena, almacenamiento de wallets, redes efectivas (con overrides de config)
 // e intervalo de refresco.
-func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider) Model {
+func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider, ens *chain.ENSResolver) Model {
 	styles := DefaultStyles()
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Dot),
@@ -107,6 +112,8 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 		networks:   networks,
 		refresh:    refresh,
 		txProvider: txProvider,
+		ens:        ens,
+		ensNames:   make(map[common.Address]string),
 		spinner:    sp,
 		input:      ti,
 		active:     tabAccounts,
@@ -115,9 +122,10 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	}
 }
 
-// Init arranca el bucle de refresco periódico de balances.
+// Init arranca el bucle de refresco periódico de balances y resuelve los nombres
+// ENS de las wallets ya seguidas.
 func (m Model) Init() tea.Cmd {
-	return refreshTickCmd(m.refresh)
+	return tea.Batch(refreshTickCmd(m.refresh), m.resolveWalletNamesCmd())
 }
 
 // Update enruta cada mensaje. Las teclas globales (salir, cambiar pestaña) se
@@ -176,6 +184,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.wallet == m.txWallet {
 			m.txErr = msg.err
 			m.txState = stateError
+		}
+		return m, nil
+
+	case ensResolvedMsg:
+		for addr, name := range msg.names {
+			m.ensNames[addr] = name
 		}
 		return m, nil
 

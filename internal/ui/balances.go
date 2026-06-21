@@ -85,7 +85,7 @@ func (m Model) renderBalances() string {
 	}
 
 	for i, r := range m.balResults {
-		wallet := fit(shortAddr(r.Address), 16)
+		wallet := fit(m.displayName(r.Address), 16)
 		red := fit(m.networkName(r.ChainID), 14)
 
 		var bal string

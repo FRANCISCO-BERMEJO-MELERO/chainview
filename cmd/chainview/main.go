@@ -51,8 +51,11 @@ func run() error {
 		txProvider = chain.NewEtherscanProvider(apiKey)
 	}
 
+	// Resolver ENS (solo mainnet) sobre la conexión del cliente; con caché propia.
+	ens := chain.NewENSResolver(client)
+
 	refresh := time.Duration(cfg.RefreshSeconds) * time.Second
-	m := ui.NewModel(client, wallets, networks, refresh, txProvider)
+	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return err
 	}
