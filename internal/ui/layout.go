@@ -84,6 +84,9 @@ func (m Model) statusRight() string {
 // contextHint son los atajos relevantes de la pestaña activa, en versión corta
 // para el footer (la lista completa vive en el overlay de ayuda).
 func (m Model) contextHint() string {
+	if m.helpOpen {
+		return "? / esc cerrar ayuda"
+	}
 	switch m.active {
 	case tabAccounts:
 		return "enter añadir · ctrl+d borrar · ↑↓ mover"
@@ -101,6 +104,10 @@ func (m Model) contextHint() string {
 // renderContent dibuja el cuerpo de la pestaña activa, recortado y rellenado al
 // área de contenido exacta para que el frame mantenga su tamaño.
 func (m Model) renderContent() string {
+	if m.helpOpen {
+		return m.renderHelp()
+	}
+
 	var body string
 	switch m.active {
 	case tabAccounts:

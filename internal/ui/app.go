@@ -69,10 +69,11 @@ type Model struct {
 	gas     map[uint64]*big.Int
 	gasPrev map[uint64]*big.Int
 
-	spinner spinner.Model
-	active  tab
-	width   int
-	height  int
+	spinner  spinner.Model
+	active   tab
+	helpOpen bool // overlay de ayuda (?) visible
+	width    int
+	height   int
 	// contentW/contentH son el área útil interior del frame, recalculada en cada
 	// WindowSizeMsg para dimensionar el contenido y los modales.
 	contentW int
@@ -174,9 +175,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "ctrl+c":
+		// ctrl+c siempre sale, pase lo que pase.
+		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
+		}
+		// El overlay de ayuda tiene prioridad sobre todo lo demás: mientras está
+		// abierto, '?'/esc/q lo cierran y el resto de teclas se ignoran.
+		if m.helpOpen {
+			switch msg.String() {
+			case "?", "esc", "q":
+				m.helpOpen = false
+			}
+			return m, nil
+		}
+		if msg.String() == "?" {
+			m.helpOpen = true
+			return m, nil
+		}
+
+		switch msg.String() {
 		case "tab":
 			m.active = m.nextTab(1)
 			return m, m.onEnterTab()
