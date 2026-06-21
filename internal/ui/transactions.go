@@ -15,12 +15,20 @@ import (
 // txLimit es cuántas transacciones recientes pedimos por wallet.
 const txLimit = 20
 
+// txRow es una tx con su descripción legible ya calculada. La descripción se
+// resuelve en background (decodifica el calldata y consulta metadatos de token),
+// no en el render, que debe ser rápido y sin I/O.
+type txRow struct {
+	tx     chain.Tx
+	detail string
+}
+
 // txsLoadedMsg / txsErrMsg son los resultados de cargar el historial de una
 // wallet. Llevan la dirección para descartar respuestas de una wallet que ya no
 // es la seleccionada (evita pintar datos obsoletos al cambiar rápido).
 type txsLoadedMsg struct {
 	wallet common.Address
-	txs    []chain.Tx
+	rows   []txRow
 }
 
 type txsErrMsg struct {
@@ -28,10 +36,13 @@ type txsErrMsg struct {
 	err    error
 }
 
-// fetchTxsCmd carga el historial en background con timeout.
+// fetchTxsCmd carga el historial en background con timeout y, de paso, decodifica
+// cada tx a una descripción legible (resolviendo símbolos/decimales de token).
 func (m Model) fetchTxsCmd(wallet common.Address) tea.Cmd {
 	provider := m.txProvider
+	resolver := m.client
 	chainID := m.txChainID
+	nativeSymbol := m.networkSymbol(chainID)
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
@@ -40,7 +51,64 @@ func (m Model) fetchTxsCmd(wallet common.Address) tea.Cmd {
 		if err != nil {
 			return txsErrMsg{wallet: wallet, err: err}
 		}
-		return txsLoadedMsg{wallet: wallet, txs: txs}
+
+		rows := make([]txRow, len(txs))
+		for i, tx := range txs {
+			rows[i] = txRow{
+				tx:     tx,
+				detail: describeTx(ctx, resolver, chainID, wallet, nativeSymbol, tx),
+			}
+		}
+		return txsLoadedMsg{wallet: wallet, rows: rows}
+	}
+}
+
+// describeTx produce la descripción legible de una tx para la columna "Detalle":
+// una acción de token decodificada cuando es posible, una transferencia nativa
+// con su valor, o un fallback para calls desconocidas.
+func describeTx(ctx context.Context, r chain.TokenResolver, chainID uint64, wallet common.Address, nativeSymbol string, tx chain.Tx) string {
+	if call, ok := chain.DecodeCall(tx.Input); ok {
+		return describeTokenCall(ctx, r, chainID, tx.To, call)
+	}
+
+	// Sin calldata decodable: o es una transferencia nativa de ETH...
+	if tx.Value.Sign() > 0 {
+		dir := "→ " + shortAddr(tx.To)
+		if tx.From != wallet {
+			dir = "← " + shortAddr(tx.From)
+		}
+		return dir + "  " + chain.FormatEther(tx.Value) + " " + nativeSymbol
+	}
+	// ...o una llamada a contrato que no sabemos leer (mostramos el selector).
+	if len(tx.Input) >= 4 {
+		return "call 0x" + common.Bytes2Hex(tx.Input[:4])
+	}
+	return "—"
+}
+
+// describeTokenCall formatea una llamada de token ya decodificada. Si conocemos
+// los metadatos del token aplica decimales y símbolo ("100 USDC"); si no, cae a
+// la cantidad cruda para no romper ante un token desconocido.
+func describeTokenCall(ctx context.Context, r chain.TokenResolver, chainID uint64, token common.Address, call chain.DecodedCall) string {
+	meta, known := r.TokenMeta(ctx, chainID, token)
+	amount := func() string {
+		if known {
+			return chain.FormatUnits(call.Value, int(meta.Decimals)) + " " + meta.Symbol
+		}
+		return call.Value.String()
+	}
+
+	switch call.Kind {
+	case chain.CallTransfer, chain.CallTransferFrom:
+		return "Transfer " + amount() + " → " + shortAddr(call.To)
+	case chain.CallApprove:
+		sym := "token"
+		if known {
+			sym = meta.Symbol
+		}
+		return "Approve " + sym + " → " + shortAddr(call.To)
+	default:
+		return ""
 	}
 }
 
@@ -124,35 +192,26 @@ func (m Model) renderTransactions() string {
 	if m.txState == stateLoading {
 		b.WriteString(m.styles.Faint.Render(m.spinner.View()+" actualizando…") + "\n")
 	}
-	b.WriteString(m.styles.Faint.Render(fit("Tx", 12) + fit("Contraparte", 16) + fit("Valor", 14) + fit("Cuándo", 11) + "Estado"))
+	b.WriteString(m.styles.Faint.Render(fit("Tx", 12) + fit("Detalle", 42) + fit("Cuándo", 11) + "Estado"))
 	b.WriteString("\n")
 
-	for i, tx := range m.txs {
-		hash := fit(tx.Hash[:10]+"…", 12)
-
-		var counterparty string
-		if tx.From == m.txWallet {
-			counterparty = "→ " + shortAddr(tx.To)
-		} else {
-			counterparty = "← " + shortAddr(tx.From)
-		}
-		counterparty = fit(counterparty, 16)
-
-		value := fit(chain.FormatEther(tx.Value)+" ETH", 14)
-		when := fit(humanizeSince(tx.Timestamp), 11)
+	for i, row := range m.txs {
+		hash := fit(row.tx.Hash[:10]+"…", 12)
+		detail := fit(row.detail, 42)
+		when := fit(humanizeSince(row.tx.Timestamp), 11)
 
 		status := "ok"
-		if !tx.Success {
+		if !row.tx.Success {
 			status = "fallida"
 		}
 
 		switch {
 		case i == m.txCursor:
-			b.WriteString(m.styles.Balance.Render("› " + hash + counterparty + value + when + status))
-		case !tx.Success:
-			b.WriteString("  " + hash + counterparty + value + when + m.styles.Error.Render(status))
+			b.WriteString(m.styles.Balance.Render("› " + hash + detail + when + status))
+		case !row.tx.Success:
+			b.WriteString("  " + hash + detail + when + m.styles.Error.Render(status))
 		default:
-			b.WriteString("  " + hash + counterparty + value + when + status)
+			b.WriteString("  " + hash + detail + when + status)
 		}
 		b.WriteString("\n")
 	}

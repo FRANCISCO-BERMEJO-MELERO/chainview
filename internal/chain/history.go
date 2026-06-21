@@ -26,6 +26,7 @@ type Tx struct {
 	From      common.Address
 	To        common.Address // dirección cero si es creación de contrato
 	Value     *big.Int       // valor en wei
+	Input     []byte         // calldata; vacío en una transferencia nativa de ETH
 	Timestamp time.Time
 	Success   bool
 	Nonce     uint64
@@ -106,6 +107,7 @@ type etherscanTx struct {
 	From            string `json:"from"`
 	To              string `json:"to"`
 	Value           string `json:"value"`
+	Input           string `json:"input"`
 	TimeStamp       string `json:"timeStamp"`
 	IsError         string `json:"isError"`
 	TxReceiptStatus string `json:"txreceipt_status"`
@@ -165,6 +167,7 @@ func (e etherscanTx) toTx() Tx {
 		From:      common.HexToAddress(e.From),
 		To:        common.HexToAddress(e.To),
 		Value:     value,
+		Input:     common.FromHex(e.Input),
 		Timestamp: time.Unix(ts, 0),
 		Success:   success,
 		Nonce:     nonce,

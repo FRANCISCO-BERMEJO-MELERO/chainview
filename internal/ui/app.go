@@ -76,7 +76,7 @@ type Model struct {
 	// Pestaña Transacciones
 	txChainID uint64
 	txState   loadState
-	txs       []chain.Tx
+	txs       []txRow
 	txErr     error
 	txCursor  int
 	txWallet  common.Address
@@ -165,7 +165,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case txsLoadedMsg:
 		// Descartamos resultados de una wallet que ya no es la seleccionada.
 		if msg.wallet == m.txWallet {
-			m.txs = msg.txs
+			m.txs = msg.rows
 			m.txErr = nil
 			m.txState = stateLoaded
 			m.clampTxCursor()
