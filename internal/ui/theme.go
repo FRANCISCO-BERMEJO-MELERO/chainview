@@ -29,6 +29,13 @@ type Styles struct {
 	Balance     lipgloss.Style
 	TrendUp     lipgloss.Style // gas sube (rojo)
 	TrendDown   lipgloss.Style // gas baja (verde)
+
+	Frame       lipgloss.Style // borde de la app que llena el terminal
+	Brand       lipgloss.Style // "CHAINVIEW" en el header
+	Rule        lipgloss.Style // separadores horizontales del frame
+	StateTitle  lipgloss.Style // título de un estado vacío/error centrado
+	NoticeError lipgloss.Style // toast/aviso de error en el footer
+	NoticeInfo  lipgloss.Style // toast/aviso informativo en el footer
 }
 
 // DefaultStyles devuelve el tema por defecto (violeta + verde menta).
@@ -74,5 +81,28 @@ func DefaultStyles() Styles {
 		TrendDown: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(colorGreen)).
 			Bold(true),
+
+		Frame: lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color(colorBorder)).
+			Padding(0, 1),
+
+		Brand: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorViolet)).
+			Bold(true),
+
+		Rule: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorBorder)),
+
+		StateTitle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorText)).
+			Bold(true),
+
+		NoticeError: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorError)).
+			Bold(true),
+
+		NoticeInfo: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorMint)),
 	}
 }

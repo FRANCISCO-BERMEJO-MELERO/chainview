@@ -227,7 +227,7 @@ func (m *Model) clampTxCursor() {
 
 func (m Model) renderTransactions() string {
 	if m.txDetailOpen {
-		return m.txViewport.View() + "\n\n" + m.styles.Faint.Render("↑↓ desplazar · esc cerrar")
+		return m.txViewport.View()
 	}
 
 	if m.wallets.Len() == 0 {

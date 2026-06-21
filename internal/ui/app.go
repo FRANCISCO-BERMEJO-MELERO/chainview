@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/spinner"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/chain"
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/storage"
-	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/ui/assets"
 )
 
 // loadState modela el ciclo de vida de la carga de balances.
@@ -75,6 +73,10 @@ type Model struct {
 	active  tab
 	width   int
 	height  int
+	// contentW/contentH son el área útil interior del frame, recalculada en cada
+	// WindowSizeMsg para dimensionar el contenido y los modales.
+	contentW int
+	contentH int
 
 	// Pestaña Cuentas
 	input         textinput.Model
@@ -160,16 +162,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		if msg.Width > 20 {
-			m.input.SetWidth(msg.Width - 12)
+		m.contentW, m.contentH = contentDims(msg.Width, msg.Height)
+		if m.contentW > 8 {
+			m.input.SetWidth(m.contentW - 4)
 		}
-		// El viewport del modal vive dentro del panel (ancho width-6), dejando
-		// margen para título, tabs y la línea de ayuda.
-		if msg.Width > 16 {
-			m.txViewport.SetWidth(msg.Width - 10)
-		}
-		if msg.Height > 16 {
-			m.txViewport.SetHeight(msg.Height - 12)
+		// El modal de detalle de tx vive en el área de contenido; le dejamos 2
+		// líneas para su propia pista de ayuda.
+		m.txViewport.SetWidth(m.contentW)
+		if m.contentH > 2 {
+			m.txViewport.SetHeight(m.contentH - 2)
 		}
 
 	case tea.KeyPressMsg:
@@ -318,21 +319,9 @@ func (m Model) nextTab(delta int) tab {
 	return tab((int(m.active) + delta + n) % n)
 }
 
-// View renderiza título + pestañas + cuerpo + ayuda contextual.
+// View dibuja toda la app como un frame que llena el terminal (ver layout.go).
 func (m Model) View() tea.View {
-	var b strings.Builder
-
-	b.WriteString(m.styles.Title.Render(assets.Title))
-	b.WriteString("\n\n")
-	b.WriteString(m.renderGasHeader())
-	b.WriteString("\n\n")
-	b.WriteString(m.renderTabs())
-	b.WriteString("\n\n")
-	b.WriteString(m.renderBody())
-	b.WriteString("\n\n")
-	b.WriteString(m.styles.Faint.Render(m.helpLine()))
-
-	return tea.NewView(b.String())
+	return tea.NewView(m.renderFrame())
 }
 
 func (m Model) renderTabs() string {
@@ -345,36 +334,4 @@ func (m Model) renderTabs() string {
 		}
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, rendered...)
-}
-
-func (m Model) renderBody() string {
-	var content string
-	switch m.active {
-	case tabAccounts:
-		content = m.renderAccounts()
-	case tabBalances:
-		content = m.renderBalances()
-	case tabTransactions:
-		content = m.renderTransactions()
-	}
-
-	panel := m.styles.Panel
-	if m.width > 0 {
-		panel = panel.Width(m.width - 6)
-	}
-	return panel.Render(content)
-}
-
-// helpLine devuelve la línea de ayuda según la pestaña activa.
-func (m Model) helpLine() string {
-	switch m.active {
-	case tabAccounts:
-		return "tab pestaña · enter añadir · ctrl+d borrar · ↑↓ seleccionar · ctrl+c salir"
-	case tabBalances:
-		return "tab pestaña · ↑↓ navegar · r recargar · q salir"
-	case tabTransactions:
-		return "tab pestaña · ↑↓ navegar · enter detalle · r recargar · q salir"
-	default:
-		return "tab pestaña · q salir"
-	}
 }
