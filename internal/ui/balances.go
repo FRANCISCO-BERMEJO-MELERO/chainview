@@ -46,9 +46,13 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.balCursor--
 		}
 	case "down":
-		if m.balCursor < len(m.balResults)-1 {
+		if m.balCursor < len(m.visibleBalances())-1 {
 			m.balCursor++
 		}
+	case "f":
+		// Alterna entre ver todas las wallets y solo la seleccionada en Cuentas.
+		m.balFocus = !m.balFocus
+		m.balCursor = 0
 	case "r":
 		if m.balState != stateLoading && m.wallets.Len() > 0 {
 			m.balState = stateLoading
@@ -56,6 +60,25 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// visibleBalances son los balances que se muestran: todos, o solo los de la
+// wallet seleccionada cuando está activo el foco individual.
+func (m Model) visibleBalances() []chain.BalanceResult {
+	if !m.balFocus {
+		return m.balResults
+	}
+	wallet, ok := m.selectedWallet()
+	if !ok {
+		return m.balResults
+	}
+	out := make([]chain.BalanceResult, 0, len(m.networks))
+	for _, r := range m.balResults {
+		if r.Address == wallet {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // countBalanceErrors cuenta las celdas con error en una tanda de balances.
@@ -70,8 +93,8 @@ func countBalanceErrors(results []chain.BalanceResult) int {
 }
 
 func (m *Model) clampBalCursor() {
-	if m.balCursor >= len(m.balResults) {
-		m.balCursor = len(m.balResults) - 1
+	if m.balCursor >= len(m.visibleBalances()) {
+		m.balCursor = len(m.visibleBalances()) - 1
 	}
 	if m.balCursor < 0 {
 		m.balCursor = 0
@@ -102,16 +125,26 @@ func (m Model) renderBalances() string {
 
 	cols := balanceColumns()
 	widths := layoutColumns(cols, m.contentW)
+	vis := m.visibleBalances()
+
+	// Contexto: modo de vista (todas / wallet seleccionada).
+	scope := "todas las wallets"
+	if m.balFocus {
+		if w, ok := m.selectedWallet(); ok {
+			scope = m.displayName(w)
+		}
+	}
+	ctx := m.styles.Balance.Render("Saldos") + m.styles.Faint.Render(" · "+scope)
+	if m.balState == stateLoading {
+		ctx += m.styles.Faint.Render("  " + m.spinner.View())
+	}
 
 	var b strings.Builder
-	if m.balState == stateLoading {
-		// Refresco con datos ya en pantalla.
-		b.WriteString(m.styles.Faint.Render(m.spinner.View()+" actualizando…") + "\n")
-	}
+	b.WriteString(ctx + "\n\n")
 	b.WriteString(m.tableHeader(cols, widths) + "\n")
 	b.WriteString(m.tableRule(widths) + "\n")
 
-	for i, r := range m.balResults {
+	for i, r := range vis {
 		wallet := m.displayName(r.Address)
 		red := m.networkName(r.ChainID)
 
