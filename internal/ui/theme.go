@@ -13,6 +13,8 @@ const (
 	colorError  = "#F87171" // errores
 	colorGreen  = "#34D399" // tendencia a la baja (gas más barato)
 	colorBorder = "#3F3F5A" // bordes de paneles
+	colorSelBg  = "#332B57" // fondo de la fila seleccionada (barra violeta tenue)
+	colorSelFg  = "#F5F3FF" // texto sobre la fila seleccionada
 )
 
 // Styles agrupa todos los estilos reutilizables de la TUI. Se construye una vez
@@ -36,6 +38,11 @@ type Styles struct {
 	StateTitle  lipgloss.Style // título de un estado vacío/error centrado
 	NoticeError lipgloss.Style // toast/aviso de error en el footer
 	NoticeInfo  lipgloss.Style // toast/aviso informativo en el footer
+
+	TableHeader lipgloss.Style // cabecera de columnas de una tabla
+	RowSelected lipgloss.Style // barra de la fila seleccionada en una tabla
+	Symbol      lipgloss.Style // símbolo de moneda / dato secundario en una tabla
+	Ok          lipgloss.Style // estado correcto (✓ verde)
 }
 
 // DefaultStyles devuelve el tema por defecto (violeta + verde menta).
@@ -104,5 +111,25 @@ func DefaultStyles() Styles {
 
 		NoticeInfo: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(colorMint)),
+
+		// Cabecera de tabla: texto pleno en negrita para que estructure la tabla
+		// (a diferencia del faint de los datos secundarios).
+		TableHeader: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorText)).
+			Bold(true),
+
+		// Fila seleccionada: barra de fondo violeta tenue a ancho completo. El
+		// realce no depende solo del color (el bloque se ve aunque el terminal no
+		// tenga truecolor), y se combina con el marcador "›".
+		RowSelected: lipgloss.NewStyle().
+			Background(lipgloss.Color(colorSelBg)).
+			Foreground(lipgloss.Color(colorSelFg)).
+			Bold(true),
+
+		Symbol: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorFaint)),
+
+		Ok: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorGreen)),
 	}
 }
