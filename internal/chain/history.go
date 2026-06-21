@@ -22,14 +22,17 @@ const etherscanV2URL = "https://api.etherscan.io/v2/api"
 
 // Tx es una transacción normalizada para mostrar en la TUI.
 type Tx struct {
-	Hash      string
-	From      common.Address
-	To        common.Address // dirección cero si es creación de contrato
-	Value     *big.Int       // valor en wei
-	Input     []byte         // calldata; vacío en una transferencia nativa de ETH
-	Timestamp time.Time
-	Success   bool
-	Nonce     uint64
+	Hash        string
+	From        common.Address
+	To          common.Address // dirección cero si es creación de contrato
+	Value       *big.Int       // valor en wei
+	Input       []byte         // calldata; vacío en una transferencia nativa de ETH
+	BlockNumber uint64
+	GasUsed     uint64
+	GasPrice    *big.Int // precio de gas en wei
+	Timestamp   time.Time
+	Success     bool
+	Nonce       uint64
 }
 
 // TxProvider abstrae la fuente del historial de transacciones para poder
@@ -108,6 +111,9 @@ type etherscanTx struct {
 	To              string `json:"to"`
 	Value           string `json:"value"`
 	Input           string `json:"input"`
+	BlockNumber     string `json:"blockNumber"`
+	GasUsed         string `json:"gasUsed"`
+	GasPrice        string `json:"gasPrice"`
 	TimeStamp       string `json:"timeStamp"`
 	IsError         string `json:"isError"`
 	TxReceiptStatus string `json:"txreceipt_status"`
@@ -158,6 +164,12 @@ func (e etherscanTx) toTx() Tx {
 	}
 	ts, _ := strconv.ParseInt(e.TimeStamp, 10, 64)
 	nonce, _ := strconv.ParseUint(e.Nonce, 10, 64)
+	block, _ := strconv.ParseUint(e.BlockNumber, 10, 64)
+	gasUsed, _ := strconv.ParseUint(e.GasUsed, 10, 64)
+	gasPrice, ok := new(big.Int).SetString(e.GasPrice, 10)
+	if !ok {
+		gasPrice = big.NewInt(0)
+	}
 
 	// Una tx tuvo éxito si no marcó error y el receipt es "1". Las txs antiguas
 	// (pre-Byzantium) no traen txreceipt_status: las tratamos como exitosas si
@@ -165,13 +177,16 @@ func (e etherscanTx) toTx() Tx {
 	success := e.IsError == "0" && (e.TxReceiptStatus == "1" || e.TxReceiptStatus == "")
 
 	return Tx{
-		Hash:      e.Hash,
-		From:      common.HexToAddress(e.From),
-		To:        common.HexToAddress(e.To),
-		Value:     value,
-		Input:     common.FromHex(e.Input),
-		Timestamp: time.Unix(ts, 0),
-		Success:   success,
-		Nonce:     nonce,
+		Hash:        e.Hash,
+		From:        common.HexToAddress(e.From),
+		To:          common.HexToAddress(e.To),
+		Value:       value,
+		Input:       common.FromHex(e.Input),
+		BlockNumber: block,
+		GasUsed:     gasUsed,
+		GasPrice:    gasPrice,
+		Timestamp:   time.Unix(ts, 0),
+		Success:     success,
+		Nonce:       nonce,
 	}
 }

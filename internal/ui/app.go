@@ -6,6 +6,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -79,12 +80,14 @@ type Model struct {
 	balCursor  int
 
 	// Pestaña Transacciones
-	txChainID uint64
-	txState   loadState
-	txs       []txRow
-	txErr     error
-	txCursor  int
-	txWallet  common.Address
+	txChainID    uint64
+	txState      loadState
+	txs          []txRow
+	txErr        error
+	txCursor     int
+	txWallet     common.Address
+	txDetailOpen bool           // modal de detalle de la tx seleccionada
+	txViewport   viewport.Model // contenido scrollable del modal
 }
 
 // NewModel construye el modelo raíz inyectando todas las dependencias: cliente
@@ -105,6 +108,12 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	ti.CharLimit = 64
 	ti.Focus() // arrancamos en la pestaña Cuentas, con el input listo
 
+	// Viewport del modal de detalle de tx. Tamaño por defecto razonable hasta que
+	// llegue el primer WindowSizeMsg.
+	vp := viewport.New()
+	vp.SetWidth(72)
+	vp.SetHeight(16)
+
 	return Model{
 		styles:     styles,
 		client:     client,
@@ -116,6 +125,7 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 		ensNames:   make(map[common.Address]string),
 		spinner:    sp,
 		input:      ti,
+		txViewport: vp,
 		active:     tabAccounts,
 		// El historial de txs en la v1 se consulta sobre Ethereum mainnet.
 		txChainID: chain.ChainEthereum,
@@ -138,6 +148,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Width > 20 {
 			m.input.SetWidth(msg.Width - 12)
 		}
+		// El viewport del modal vive dentro del panel (ancho width-6), dejando
+		// margen para título, tabs y la línea de ayuda.
+		if msg.Width > 16 {
+			m.txViewport.SetWidth(msg.Width - 10)
+		}
+		if msg.Height > 16 {
+			m.txViewport.SetHeight(msg.Height - 12)
+		}
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -150,8 +168,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.active = m.nextTab(-1)
 			return m, m.onEnterTab()
 		}
-		// 'q' sale salvo en Cuentas, donde se está escribiendo en el input.
-		if msg.String() == "q" && m.active != tabAccounts {
+		// 'q' sale salvo en Cuentas (se está escribiendo en el input) o con el
+		// modal de detalle abierto (ahí 'q' no debe cerrar la app).
+		if msg.String() == "q" && m.active != tabAccounts && !m.txDetailOpen {
 			return m, tea.Quit
 		}
 		switch m.active {
@@ -227,6 +246,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // onEnterTab ajusta el foco del input y lanza la carga de balances al entrar en
 // la pestaña Balances por primera vez.
 func (m *Model) onEnterTab() tea.Cmd {
+	m.txDetailOpen = false // cambiar de pestaña cierra el modal de detalle
 	switch m.active {
 	case tabAccounts:
 		return m.input.Focus()
@@ -303,7 +323,7 @@ func (m Model) helpLine() string {
 	case tabBalances:
 		return "tab pestaña · ↑↓ navegar · r recargar · q salir"
 	case tabTransactions:
-		return "tab pestaña · ↑↓ navegar · r recargar · q salir"
+		return "tab pestaña · ↑↓ navegar · enter detalle · r recargar · q salir"
 	default:
 		return "tab pestaña · q salir"
 	}

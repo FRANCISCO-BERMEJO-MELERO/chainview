@@ -144,6 +144,18 @@ func (m *Model) loadTxsCmd() tea.Cmd {
 
 // updateTransactions maneja las teclas de la pestaña Transacciones.
 func (m Model) updateTransactions(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	// Con el modal de detalle abierto, esc lo cierra y el resto de teclas
+	// (flechas, page up/down) las consume el viewport para desplazar.
+	if m.txDetailOpen {
+		if msg.String() == "esc" {
+			m.txDetailOpen = false
+			return m, nil
+		}
+		var cmd tea.Cmd
+		m.txViewport, cmd = m.txViewport.Update(msg)
+		return m, cmd
+	}
+
 	switch msg.String() {
 	case "up":
 		if m.txCursor > 0 {
@@ -153,6 +165,12 @@ func (m Model) updateTransactions(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if m.txCursor < len(m.txs)-1 {
 			m.txCursor++
 		}
+	case "enter":
+		if m.txCursor >= 0 && m.txCursor < len(m.txs) {
+			m.txViewport.SetContent(m.txDetailContent(m.txs[m.txCursor]))
+			m.txViewport.GotoTop()
+			m.txDetailOpen = true
+		}
 	case "r":
 		if m.txState != stateLoading {
 			m.txState = stateIdle // forzar recarga
@@ -160,6 +178,42 @@ func (m Model) updateTransactions(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// txDetailContent compone el cuerpo del modal con todos los campos de la tx.
+func (m Model) txDetailContent(row txRow) string {
+	tx := row.tx
+	sym := m.networkSymbol(m.txChainID)
+
+	status := "ok"
+	if !tx.Success {
+		status = "fallida"
+	}
+
+	label := func(s string) string { return m.styles.Faint.Render(fit(s, 12)) }
+	addr := func(a common.Address) string {
+		if name := m.ensNames[a]; name != "" {
+			return name + "  " + a.Hex()
+		}
+		return a.Hex()
+	}
+
+	lines := []string{
+		label("Hash") + tx.Hash,
+		label("Estado") + status,
+		label("Bloque") + fmt.Sprintf("%d", tx.BlockNumber),
+		label("Fecha") + tx.Timestamp.Format("2006-01-02 15:04:05") + "  (" + humanizeSince(tx.Timestamp) + ")",
+		"",
+		label("De") + addr(tx.From),
+		label("A") + addr(tx.To),
+		label("Valor") + chain.FormatEther(tx.Value) + " " + sym,
+		label("Acción") + row.detail,
+		"",
+		label("Gas usado") + fmt.Sprintf("%d", tx.GasUsed),
+		label("Gas price") + chain.FormatUnits(tx.GasPrice, 9) + " gwei",
+		label("Nonce") + fmt.Sprintf("%d", tx.Nonce),
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m *Model) clampTxCursor() {
@@ -172,6 +226,10 @@ func (m *Model) clampTxCursor() {
 }
 
 func (m Model) renderTransactions() string {
+	if m.txDetailOpen {
+		return m.txViewport.View() + "\n\n" + m.styles.Faint.Render("↑↓ desplazar · esc cerrar")
+	}
+
 	if m.wallets.Len() == 0 {
 		return m.styles.Faint.Render("Añade wallets en la pestaña Cuentas para ver sus transacciones.")
 	}
