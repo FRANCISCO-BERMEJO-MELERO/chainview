@@ -329,6 +329,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.gasOK, m.gasTotal = ok, len(msg.results)
 		m.lastGas = time.Now()
+		if rl := m.client.RateLimitedChains(); len(rl) > 0 {
+			m.setNotice(noticeError, fmt.Sprintf("⚠ %d red(es) rate-limited · sirviendo caché", len(rl)))
+			return m, noticeClearCmd(m.noticeUntil)
+		}
 		return m, nil
 
 	case refreshTickMsg:

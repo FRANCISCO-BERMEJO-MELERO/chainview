@@ -8,15 +8,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// BalanceAt devuelve el balance nativo (en wei) de una dirección en la red
-// indicada, leído del último bloque. Abre la conexión de forma lazy si hace
-// falta (ver connect).
+// balanceAtRaw lee el balance nativo (en wei) de una dirección directamente por
+// RPC, sin caché. El acceso público con caché/single-flight/backoff es BalanceAt
+// (ver cache.go). Abre la conexión de forma lazy si hace falta (ver connect).
 //
 // Recibe un context para poder aplicar timeout/cancelación desde quien llama:
 // esto se invocará siempre desde un tea.Cmd con context.WithTimeout, de modo que
 // una red lenta no cuelgue la goroutine indefinidamente. Nunca llamar desde
 // Update de forma síncrona.
-func (c *Client) BalanceAt(ctx context.Context, chainID uint64, addr common.Address) (*big.Int, error) {
+func (c *Client) balanceAtRaw(ctx context.Context, chainID uint64, addr common.Address) (*big.Int, error) {
 	conn, err := c.connect(chainID)
 	if err != nil {
 		return nil, err

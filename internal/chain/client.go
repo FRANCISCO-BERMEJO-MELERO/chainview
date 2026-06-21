@@ -3,8 +3,10 @@ package chain
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+	"golang.org/x/sync/singleflight"
 )
 
 // Client es un cliente multi-red sobre go-ethereum. Abre las conexiones RPC
@@ -22,6 +24,11 @@ type Client struct {
 
 	tokenMu    sync.RWMutex          // protege tokenCache
 	tokenCache map[string]tokenEntry // metadatos de token resueltos por "chainID:address"
+
+	rpcMu    sync.Mutex           // protege rpcCache y cooldown
+	rpcCache map[string]rpcEntry  // balances/gas cacheados con TTL, por clave
+	cooldown map[uint64]time.Time // chain ID -> hasta cuándo está en cooldown por 429
+	sf       singleflight.Group   // coalescing de lecturas RPC idénticas concurrentes
 }
 
 // tokenEntry es una entrada de la caché de metadatos de token. Guardamos también
@@ -42,6 +49,8 @@ func NewClient(networks []Network) *Client {
 		networks:   nets,
 		conns:      make(map[uint64]*ethclient.Client),
 		tokenCache: make(map[string]tokenEntry),
+		rpcCache:   make(map[string]rpcEntry),
+		cooldown:   make(map[uint64]time.Time),
 	}
 }
 

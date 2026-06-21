@@ -16,10 +16,10 @@ type GasResult struct {
 	Err     error
 }
 
-// GasPriceAt devuelve el gas price sugerido de una red (eth_gasPrice), en wei.
-// Abre la conexión de forma lazy si hace falta. Como todo I/O de red, recibe un
-// context para timeout/cancelación desde el tea.Cmd que lo invoca.
-func (c *Client) GasPriceAt(ctx context.Context, chainID uint64) (*big.Int, error) {
+// gasPriceAtRaw lee el gas price sugerido de una red (eth_gasPrice), en wei, sin
+// caché. El acceso público con caché/single-flight/backoff es GasPriceAt (ver
+// cache.go). Abre la conexión de forma lazy si hace falta.
+func (c *Client) gasPriceAtRaw(ctx context.Context, chainID uint64) (*big.Int, error) {
 	conn, err := c.connect(chainID)
 	if err != nil {
 		return nil, err
