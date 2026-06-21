@@ -1,0 +1,25 @@
+# chainview — configuración de ejemplo
+#
+# chainview funciona SIN configuración: cópialo solo si quieres cambiar algo.
+# Ubicación esperada (XDG):
+#   Linux/BSD : ~/.config/chainview/config.toml
+#   macOS     : ~/Library/Application Support/chainview/config.toml
+#
+#   cp config.example.toml ~/.config/chainview/config.toml
+
+# Cada cuántos segundos se refrescan los balances (polling). Por defecto: 15.
+refresh_seconds = 15
+
+# API key de Etherscan. OPCIONAL: por defecto el historial de transacciones se
+# obtiene de Blockscout SIN ninguna key. Si defines una key, chainview usará
+# Etherscan en su lugar. Tiene prioridad la variable de entorno ETHERSCAN_API_KEY.
+# etherscan_api_key = "TU_API_KEY"
+
+# Overrides de endpoint RPC por red. Por defecto se usan los RPC públicos de
+# publicnode.com (gratis, sin key, rate-limited). Apunta aquí tu propio endpoint
+# (Alchemy, Infura, nodo propio…) para más cuota. La clave es el slug de la red.
+[rpc]
+# ethereum = "https://eth-mainnet.g.alchemy.com/v2/TU_KEY"
+# arbitrum = "https://arb-mainnet.g.alchemy.com/v2/TU_KEY"
+# base     = "https://base-mainnet.g.alchemy.com/v2/TU_KEY"
+# optimism = "https://opt-mainnet.g.alchemy.com/v2/TU_KEY"
