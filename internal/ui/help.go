@@ -36,6 +36,7 @@ func keyGroups() []keyGroup {
 		{"Balances", []keyHelp{
 			{"↑ ↓", "moverse por la tabla"},
 			{"f", "alternar todas / la wallet seleccionada"},
+			{"e", "exportar saldos a CSV"},
 			{"r", "recargar balances"},
 		}},
 		{"Transacciones", []keyHelp{
@@ -44,6 +45,7 @@ func keyGroups() []keyGroup {
 			{"esc", "cerrar el detalle"},
 			{"f", "filtrar por red (cicla)"},
 			{"m", "cargar más (página siguiente)"},
+			{"e", "exportar transacciones a CSV"},
 			{"r", "recargar historial"},
 		}},
 	}

@@ -3,6 +3,9 @@ context.md
 tasks.json
 docs/
 
+# Exportaciones CSV generadas por la app (saldos / transacciones)
+/chainview-exports/
+
 # Binarios y artefactos de build
 /bin/
 /dist/
