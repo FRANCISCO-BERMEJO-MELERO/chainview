@@ -19,6 +19,16 @@ type Client struct {
 	mu       sync.RWMutex                 // protege el mapa conns
 	networks map[uint64]Network           // redes conocidas, indexadas por chain ID
 	conns    map[uint64]*ethclient.Client // conexiones ya abiertas (cache lazy)
+
+	tokenMu    sync.RWMutex          // protege tokenCache
+	tokenCache map[string]tokenEntry // metadatos de token resueltos por "chainID:address"
+}
+
+// tokenEntry es una entrada de la caché de metadatos de token. Guardamos también
+// los fallos (ok=false) para no reintentar RPC ante un token no estándar.
+type tokenEntry struct {
+	meta TokenMeta
+	ok   bool
 }
 
 // NewClient construye el cliente a partir de una lista de redes. No abre
@@ -29,8 +39,9 @@ func NewClient(networks []Network) *Client {
 		nets[n.ChainID] = n
 	}
 	return &Client{
-		networks: nets,
-		conns:    make(map[uint64]*ethclient.Client),
+		networks:   nets,
+		conns:      make(map[uint64]*ethclient.Client),
+		tokenCache: make(map[string]tokenEntry),
 	}
 }
 
