@@ -69,6 +69,16 @@ type Model struct {
 	gas     map[uint64]*big.Int
 	gasPrev map[uint64]*big.Int
 
+	// Estado vivo para la barra inferior.
+	lastGas  time.Time // última lectura de gas correcta
+	gasOK    int       // redes con gas OK en la última lectura
+	gasTotal int       // redes consultadas en la última lectura
+
+	// Notificación transitoria (toast) en el footer.
+	notice      string
+	noticeLevel noticeLevel
+	noticeUntil time.Time
+
 	spinner  spinner.Model
 	active   tab
 	helpOpen bool // overlay de ayuda (?) visible
@@ -99,6 +109,34 @@ type Model struct {
 	txWallet     common.Address
 	txDetailOpen bool           // modal de detalle de la tx seleccionada
 	txViewport   viewport.Model // contenido scrollable del modal
+}
+
+// noticeLevel clasifica el tono de un toast del footer.
+type noticeLevel int
+
+const (
+	noticeInfo noticeLevel = iota
+	noticeError
+)
+
+// noticeTTL es cuánto se muestra un toast antes de desaparecer.
+const noticeTTL = 4 * time.Second
+
+// noticeClearMsg pide borrar el toast; `at` identifica la notice concreta para no
+// borrar una más nueva fijada entretanto.
+type noticeClearMsg struct{ at time.Time }
+
+// setNotice fija un toast en el footer. El llamador debe lanzar noticeClearCmd
+// para que desaparezca solo.
+func (m *Model) setNotice(level noticeLevel, text string) {
+	m.notice = text
+	m.noticeLevel = level
+	m.noticeUntil = time.Now().Add(noticeTTL)
+}
+
+// noticeClearCmd programa el borrado del toast tras noticeTTL.
+func noticeClearCmd(at time.Time) tea.Cmd {
+	return tea.Tick(noticeTTL, func(time.Time) tea.Msg { return noticeClearMsg{at: at} })
 }
 
 // NewModel construye el modelo raíz inyectando todas las dependencias: cliente
@@ -220,6 +258,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.balResults = msg.results
 		m.balState = stateLoaded
 		m.clampBalCursor()
+		if n := countBalanceErrors(msg.results); n > 0 {
+			m.setNotice(noticeError, fmt.Sprintf("⚠ %d balance(s) no se cargaron", n))
+			return m, noticeClearCmd(m.noticeUntil)
+		}
 		return m, nil
 
 	case txsLoadedMsg:
@@ -245,6 +287,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case noticeClearMsg:
+		// Solo borramos si nadie fijó una notice más nueva entretanto.
+		if m.noticeUntil.Equal(msg.at) {
+			m.notice = ""
+		}
+		return m, nil
+
 	case ensAddMsg:
 		m.resolvingName = ""
 		if !msg.ok {
@@ -267,15 +316,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(gasTickCmd(m.refresh), m.fetchGasCmd())
 
 	case gasMsg:
+		ok := 0
 		for _, r := range msg.results {
 			if r.Err != nil || r.Wei == nil {
 				continue // conservamos el último valor bueno de esa red
 			}
-			if cur, ok := m.gas[r.ChainID]; ok {
+			ok++
+			if cur, exists := m.gas[r.ChainID]; exists {
 				m.gasPrev[r.ChainID] = cur // el actual pasa a ser el anterior
 			}
 			m.gas[r.ChainID] = r.Wei
 		}
+		m.gasOK, m.gasTotal = ok, len(msg.results)
+		m.lastGas = time.Now()
 		return m, nil
 
 	case refreshTickMsg:

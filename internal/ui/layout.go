@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"charm.land/lipgloss/v2"
 )
@@ -73,20 +75,38 @@ func (m Model) renderStatusBar(w int) string {
 	return bar(m.statusLeft(), m.statusRight(), w)
 }
 
+// statusLeft muestra el toast activo o, si no hay, el estado vivo: frescura del
+// último refresco y salud de las redes.
 func (m Model) statusLeft() string {
-	return m.styles.Faint.Render(m.contextHint())
+	if m.notice != "" && time.Now().Before(m.noticeUntil) {
+		style := m.styles.NoticeInfo
+		if m.noticeLevel == noticeError {
+			style = m.styles.NoticeError
+		}
+		return style.Render(m.notice)
+	}
+	if m.lastGas.IsZero() {
+		return m.styles.Faint.Render("⟳ cargando…")
+	}
+	fresh := "⟳ " + sinceShort(m.lastGas)
+	if m.gasTotal > 0 && m.gasOK < m.gasTotal {
+		return m.styles.Faint.Render(fresh+" · ") +
+			m.styles.NoticeError.Render(fmt.Sprintf("%d/%d redes con error", m.gasTotal-m.gasOK, m.gasTotal))
+	}
+	return m.styles.Faint.Render(fmt.Sprintf("%s · %d/%d redes ok", fresh, m.gasOK, m.gasTotal))
 }
 
+// statusRight muestra los atajos contextuales + el acceso a la ayuda.
 func (m Model) statusRight() string {
-	return m.styles.Faint.Render("tab cambiar · ? ayuda · q salir")
+	if m.helpOpen {
+		return m.styles.Faint.Render("? / esc cerrar")
+	}
+	return m.styles.Faint.Render(m.contextHint() + " · ? ayuda · q salir")
 }
 
 // contextHint son los atajos relevantes de la pestaña activa, en versión corta
 // para el footer (la lista completa vive en el overlay de ayuda).
 func (m Model) contextHint() string {
-	if m.helpOpen {
-		return "? / esc cerrar ayuda"
-	}
 	switch m.active {
 	case tabAccounts:
 		return "enter añadir · ctrl+d borrar · ↑↓ mover"
@@ -132,6 +152,22 @@ func (m Model) renderState(icon, title, hint string) string {
 		body += "\n\n" + m.styles.Faint.Render(hint)
 	}
 	return lipgloss.Place(m.contentW, m.contentH, lipgloss.Center, lipgloss.Center, body)
+}
+
+// sinceShort da una marca temporal relativa fina (con segundos) para el estado
+// del footer.
+func sinceShort(t time.Time) string {
+	d := time.Since(t)
+	switch {
+	case d < 2*time.Second:
+		return "ahora"
+	case d < time.Minute:
+		return fmt.Sprintf("hace %ds", int(d.Seconds()))
+	case d < time.Hour:
+		return fmt.Sprintf("hace %dm", int(d.Minutes()))
+	default:
+		return fmt.Sprintf("hace %dh", int(d.Hours()))
+	}
 }
 
 // bar coloca `left` y `right` en una línea de ancho w, con el espacio repartido

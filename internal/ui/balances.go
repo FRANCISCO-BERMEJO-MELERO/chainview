@@ -58,6 +58,17 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// countBalanceErrors cuenta las celdas con error en una tanda de balances.
+func countBalanceErrors(results []chain.BalanceResult) int {
+	n := 0
+	for _, r := range results {
+		if r.Err != nil {
+			n++
+		}
+	}
+	return n
+}
+
 func (m *Model) clampBalCursor() {
 	if m.balCursor >= len(m.balResults) {
 		m.balCursor = len(m.balResults) - 1
