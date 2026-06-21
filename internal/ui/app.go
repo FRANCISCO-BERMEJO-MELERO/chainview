@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -70,9 +71,10 @@ type Model struct {
 	height  int
 
 	// Pestaña Cuentas
-	input     textinput.Model
-	addErr    error
-	accCursor int
+	input         textinput.Model
+	addErr        error
+	accCursor     int
+	resolvingName string // nombre ENS que se está resolviendo para añadir, si hay
 
 	// Pestaña Balances
 	balState   loadState
@@ -101,7 +103,7 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	)
 
 	ti := textinput.New()
-	ti.Placeholder = "0x… address EVM, luego Enter"
+	ti.Placeholder = "0x… address o nombre ENS (vitalik.eth), luego Enter"
 	ti.Prompt = "› "
 	// Holgura sobre los 42 chars de una address para que un pegado con espacios
 	// alrededor no se trunque; el TrimSpace + validación al añadir lo sanean.
@@ -210,6 +212,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for addr, name := range msg.names {
 			m.ensNames[addr] = name
 		}
+		return m, nil
+
+	case ensAddMsg:
+		m.resolvingName = ""
+		if !msg.ok {
+			m.addErr = fmt.Errorf("no se pudo resolver %q en ENS", msg.name)
+			return m, nil
+		}
+		if err := m.wallets.Add(msg.addr.Hex()); err != nil {
+			m.addErr = err
+			return m, nil
+		}
+		m.addErr = nil
+		m.ensNames[msg.addr] = msg.name // ya conocemos el nombre, lo cacheamos
+		m.input.Reset()
+		m.balState = stateIdle
+		m.clampAccCursor()
 		return m, nil
 
 	case refreshTickMsg:

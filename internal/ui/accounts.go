@@ -1,10 +1,12 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // updateAccounts maneja las teclas de la pestaña Cuentas: escribir/añadir una
@@ -18,6 +20,18 @@ func (m Model) updateAccounts(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if val == "" {
 			return m, nil
 		}
+		// Si parece un nombre ENS (no es una address hex y lleva punto, p.ej.
+		// "vitalik.eth"), lo resolvemos primero y añadimos la address resultante.
+		if !common.IsHexAddress(val) && strings.Contains(val, ".") {
+			if m.ens == nil {
+				m.addErr = errors.New("resolución ENS no disponible")
+				return m, nil
+			}
+			m.addErr = nil
+			m.resolvingName = val
+			return m, m.resolveAndAddCmd(val)
+		}
+		// Address hex (o entrada inválida, que Add rechazará con su propio mensaje).
 		if err := m.wallets.Add(val); err != nil {
 			m.addErr = err
 			return m, nil
@@ -84,6 +98,10 @@ func (m Model) renderAccounts() string {
 	b.WriteString("\n")
 	if m.addErr != nil {
 		b.WriteString(m.styles.Error.Render(m.addErr.Error()))
+		b.WriteString("\n")
+	}
+	if m.resolvingName != "" {
+		b.WriteString(m.styles.Faint.Render("resolviendo " + m.resolvingName + "…"))
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")

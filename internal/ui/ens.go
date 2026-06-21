@@ -13,6 +13,27 @@ type ensResolvedMsg struct {
 	names map[common.Address]string
 }
 
+// ensAddMsg es el resultado de resolver un nombre ENS escrito en el input de
+// Cuentas para añadirlo como wallet.
+type ensAddMsg struct {
+	name string
+	addr common.Address
+	ok   bool
+}
+
+// resolveAndAddCmd resuelve un nombre ENS (directa) en background para añadirlo
+// como wallet. El que llama ya ha comprobado que m.ens no es nil.
+func (m Model) resolveAndAddCmd(name string) tea.Cmd {
+	resolver := m.ens
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		addr, ok := resolver.Resolve(ctx, name)
+		return ensAddMsg{name: name, addr: addr, ok: ok}
+	}
+}
+
 // resolveWalletNamesCmd resuelve en background el nombre ENS inverso de todas las
 // wallets seguidas. El propio ENSResolver cachea, así que llamarlo de más es
 // barato. Devuelve nil si no hay resolver (p.ej. no se pudo abrir mainnet).
