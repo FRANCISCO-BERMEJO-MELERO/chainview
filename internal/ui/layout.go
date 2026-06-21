@@ -108,6 +108,9 @@ func (m Model) statusRight() string {
 	if m.helpOpen {
 		return m.styles.Faint.Render("? / esc cerrar")
 	}
+	if m.networksOpen {
+		return m.styles.Faint.Render("espacio conmutar · esc cerrar")
+	}
 	return m.styles.Faint.Render(m.contextHint() + " · ? ayuda · q salir")
 }
 
@@ -118,7 +121,7 @@ func (m Model) contextHint() string {
 	case tabAccounts:
 		return "enter añadir · ctrl+d borrar · ↑↓ mover"
 	case tabBalances:
-		return "↑↓ mover · r recargar"
+		return "↑↓ mover · r recargar · n redes"
 	case tabTransactions:
 		if m.txDetailOpen {
 			return "↑↓ desplazar · esc cerrar"
@@ -133,6 +136,9 @@ func (m Model) contextHint() string {
 func (m Model) renderContent() string {
 	if m.helpOpen {
 		return m.renderHelp()
+	}
+	if m.networksOpen {
+		return m.renderNetworks()
 	}
 
 	var body string

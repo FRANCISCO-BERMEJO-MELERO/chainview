@@ -23,6 +23,7 @@ func keyGroups() []keyGroup {
 	return []keyGroup{
 		{"Global", []keyHelp{
 			{"tab / shift+tab", "cambiar de pestaña"},
+			{"n", "elegir redes visibles"},
 			{"?", "abrir/cerrar esta ayuda"},
 			{"q", "salir"},
 			{"ctrl+c", "salir"},

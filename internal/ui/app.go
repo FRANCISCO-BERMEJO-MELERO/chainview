@@ -79,11 +79,18 @@ type Model struct {
 	noticeLevel noticeLevel
 	noticeUntil time.Time
 
-	spinner  spinner.Model
-	active   tab
-	helpOpen bool // overlay de ayuda (?) visible
-	width    int
-	height   int
+	// allNetworks es el catálogo completo de redes (con overrides de config);
+	// `networks` es la vista filtrada por las redes activas del usuario, que es lo
+	// que consumen balances, gas y transacciones.
+	allNetworks []chain.Network
+
+	spinner        spinner.Model
+	active         tab
+	helpOpen       bool // overlay de ayuda (?) visible
+	networksOpen   bool // overlay de selección de redes (n) visible
+	networksCursor int
+	width          int
+	height         int
 
 	// Pantalla de bienvenida (portada con logo + intro). showWelcome es si está
 	// visible ahora; welcomeHide es el estado del conmutador "no volver a mostrar";
@@ -171,14 +178,15 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	vp.SetHeight(16)
 
 	return Model{
-		styles:     styles,
-		client:     client,
-		wallets:    wallets,
-		networks:   networks,
-		refresh:    refresh,
-		txProvider: txProvider,
-		ens:        ens,
-		prefs:      prefs,
+		styles:      styles,
+		client:      client,
+		wallets:     wallets,
+		networks:    enabledNetworks(networks, prefs),
+		allNetworks: networks,
+		refresh:     refresh,
+		txProvider:  txProvider,
+		ens:         ens,
+		prefs:       prefs,
 		// Mostramos la portada al arrancar salvo que el usuario pidiera ocultarla.
 		showWelcome: prefs == nil || !prefs.HideWelcome,
 		welcomeHide: prefs != nil && prefs.HideWelcome,
@@ -245,6 +253,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		// El overlay de selección de redes captura el teclado mientras está abierto.
+		if m.networksOpen {
+			return m.updateNetworks(msg)
+		}
 		// El overlay de ayuda tiene prioridad sobre todo lo demás: mientras está
 		// abierto, '?'/esc/q lo cierran y el resto de teclas se ignoran.
 		if m.helpOpen {
@@ -256,6 +268,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.String() == "?" {
 			m.helpOpen = true
+			return m, nil
+		}
+		// 'n' abre la selección de redes. Solo fuera de Cuentas (allí 'n' se escribe
+		// en el input, p.ej. nombres ENS) y sin el modal de detalle abierto.
+		if msg.String() == "n" && m.active != tabAccounts && !m.txDetailOpen {
+			m.networksOpen = true
+			m.networksCursor = 0
 			return m, nil
 		}
 
