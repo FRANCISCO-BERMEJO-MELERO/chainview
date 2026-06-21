@@ -53,6 +53,8 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Alterna entre ver todas las wallets y solo la seleccionada en Cuentas.
 		m.balFocus = !m.balFocus
 		m.balCursor = 0
+	case "e":
+		return m, m.exportBalancesCmd()
 	case "r":
 		if m.balState != stateLoading && m.wallets.Len() > 0 {
 			m.balState = stateLoading

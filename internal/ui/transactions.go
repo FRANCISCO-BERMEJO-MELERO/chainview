@@ -304,6 +304,8 @@ func (m Model) updateTransactions(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.txNetFilter = m.nextTxFilter()
 		m.txCursor = 0
 		m.txScroll = 0
+	case "e":
+		return m, m.exportTxsCmd()
 	case "enter":
 		vis := m.visibleTxs()
 		if m.txCursor >= 0 && m.txCursor < len(vis) {

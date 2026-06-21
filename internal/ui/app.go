@@ -353,6 +353,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case exportDoneMsg:
+		switch {
+		case msg.err != nil:
+			m.setNotice(noticeError, "No se pudo exportar: "+msg.err.Error())
+		case msg.count == 0:
+			m.setNotice(noticeInfo, "Nada que exportar")
+		default:
+			m.setNotice(noticeInfo, fmt.Sprintf("✓ %d filas exportadas a %s", msg.count, msg.path))
+		}
+		return m, noticeClearCmd(m.noticeUntil)
+
 	case ensResolvedMsg:
 		for addr, name := range msg.names {
 			m.ensNames[addr] = name
