@@ -84,6 +84,13 @@ type Model struct {
 	helpOpen bool // overlay de ayuda (?) visible
 	width    int
 	height   int
+
+	// Pantalla de bienvenida (portada con logo + intro). showWelcome es si está
+	// visible ahora; welcomeHide es el estado del conmutador "no volver a mostrar";
+	// prefs persiste esa preferencia entre sesiones.
+	prefs       *storage.Prefs
+	showWelcome bool
+	welcomeHide bool
 	// contentW/contentH son el área útil interior del frame, recalculada en cada
 	// WindowSizeMsg para dimensionar el contenido y los modales.
 	contentW int
@@ -142,7 +149,7 @@ func noticeClearCmd(at time.Time) tea.Cmd {
 // NewModel construye el modelo raíz inyectando todas las dependencias: cliente
 // de cadena, almacenamiento de wallets, redes efectivas (con overrides de config)
 // e intervalo de refresco.
-func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider, ens *chain.ENSResolver) Model {
+func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider, ens *chain.ENSResolver, prefs *storage.Prefs) Model {
 	styles := DefaultStyles()
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Dot),
@@ -171,13 +178,17 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 		refresh:    refresh,
 		txProvider: txProvider,
 		ens:        ens,
-		ensNames:   make(map[common.Address]string),
-		gas:        make(map[uint64]*big.Int),
-		gasPrev:    make(map[uint64]*big.Int),
-		spinner:    sp,
-		input:      ti,
-		txViewport: vp,
-		active:     tabAccounts,
+		prefs:      prefs,
+		// Mostramos la portada al arrancar salvo que el usuario pidiera ocultarla.
+		showWelcome: prefs == nil || !prefs.HideWelcome,
+		welcomeHide: prefs != nil && prefs.HideWelcome,
+		ensNames:    make(map[common.Address]string),
+		gas:         make(map[uint64]*big.Int),
+		gasPrev:     make(map[uint64]*big.Int),
+		spinner:     sp,
+		input:       ti,
+		txViewport:  vp,
+		active:      tabAccounts,
 		// El historial de txs en la v1 se consulta sobre Ethereum mainnet.
 		txChainID: chain.ChainEthereum,
 	}
@@ -216,6 +227,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// ctrl+c siempre sale, pase lo que pase.
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
+		}
+		// La portada de bienvenida captura el teclado mientras está visible: enter
+		// entra a la app, 'd' conmuta "no volver a mostrar" (se guarda al entrar),
+		// 'q' sale.
+		if m.showWelcome {
+			switch msg.String() {
+			case "q":
+				return m, tea.Quit
+			case "d":
+				m.welcomeHide = !m.welcomeHide
+			case "enter", " ", "esc":
+				m.showWelcome = false
+				if m.prefs != nil && m.welcomeHide != m.prefs.HideWelcome {
+					_ = m.prefs.SetHideWelcome(m.welcomeHide)
+				}
+			}
+			return m, nil
 		}
 		// El overlay de ayuda tiene prioridad sobre todo lo demás: mientras está
 		// abierto, '?'/esc/q lo cierran y el resto de teclas se ignoran.
@@ -396,8 +424,13 @@ func (m Model) nextTab(delta int) tab {
 }
 
 // View dibuja toda la app como un frame que llena el terminal (ver layout.go).
+// AltScreen pone la TUI en el búfer alterno (pantalla completa): sin él, un frame
+// de altura completa hace scroll y deja el header fuera de vista.
 func (m Model) View() tea.View {
-	return tea.NewView(m.renderFrame())
+	v := tea.NewView(m.renderFrame())
+	v.AltScreen = true
+	v.WindowTitle = "chainview"
+	return v
 }
 
 func (m Model) renderTabs() string {
