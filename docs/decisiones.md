@@ -57,3 +57,31 @@ de entorno `ETHERSCAN_API_KEY` (esta última tiene prioridad, para no dejar la
 key en archivos). Sin key, la pestaña Transacciones muestra un aviso en la UI en
 lugar de romper. El acceso queda detrás de la interfaz `chain.TxProvider` para
 poder mockearlo en tests.
+
+## D4 — Decodificación de calls y metadatos de token (Semana 6)
+
+**Contexto:** las txs a contratos llegan como calldata hex (`0xa9059cbb…`). Para
+mostrar "Transfer 100 USDC → 0x…" hay que (a) identificar el método por su
+selector de 4 bytes y decodificar los argumentos, y (b) traducir la cantidad
+cruda a unidades legibles, lo que exige el símbolo y los decimales del token.
+
+**Decisión:**
+
+- **Decodificación de selectores: ABIs locales** para los métodos comunes de
+  ERC-20/721 (`transfer`, `transferFrom`, `safeTransferFrom`, `approve`),
+  decodificando los argumentos con `accounts/abi` de go-ethereum. 4byte.directory
+  queda como posible fallback de v2 para métodos arbitrarios.
+- **Metadatos de token (símbolo + decimales): tabla local** de tokens conocidos
+  por chain (USDC, USDT, DAI, WETH…) como camino rápido, con **fallback a RPC**
+  (`symbol()` / `decimals()`) para tokens fuera de la tabla. El resultado se
+  cachea en memoria por `chainID:address` (incluidos los fallos, para no repetir
+  RPC ante un token no estándar).
+
+**Motivo:** los selectores de ERC-20/721 son un conjunto pequeño y estable; una
+ABI local los cubre sin dependencias de red ni de terceros, y es lo que aporta
+valor inmediato en una TUI watch-only. 4byte añadiría cobertura de métodos raros
+a cambio de otra dependencia externa y latencia: no compensa en v1. Para los
+metadatos, la tabla local resuelve sin RPC el 99 % de los casos reales (los
+tokens populares), y el fallback por RPC + caché cubre la cola larga sin castigar
+el rate-limit. La resolución queda tras la interfaz `chain.TokenResolver`
+(implementada por `chain.Client`) para poder mockearla en tests.
