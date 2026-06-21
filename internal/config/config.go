@@ -27,8 +27,10 @@ const defaultRefreshSeconds = 15
 type Config struct {
 	// RefreshSeconds es cada cuántos segundos se refrescan los balances.
 	RefreshSeconds int `toml:"refresh_seconds"`
-	// EtherscanAPIKey es la key para el historial de txs (Etherscan V2). Puede
-	// sobreescribirse con la variable de entorno ETHERSCAN_API_KEY.
+	// EtherscanAPIKey es OPCIONAL. Por defecto el historial de txs se obtiene de
+	// Blockscout sin ninguna key; si se define esta key (en el TOML o en la
+	// variable de entorno ETHERSCAN_API_KEY, que tiene prioridad), se usa
+	// Etherscan en su lugar.
 	EtherscanAPIKey string `toml:"etherscan_api_key"`
 	// RPC mapea el slug de una red (chain.Network.Key, p.ej. "ethereum") a una
 	// URL RPC que sobreescribe la pública por defecto. Permite usar Alchemy/Infura.

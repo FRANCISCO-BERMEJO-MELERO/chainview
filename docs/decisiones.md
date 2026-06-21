@@ -58,6 +58,33 @@ key en archivos). Sin key, la pestaña Transacciones muestra un aviso en la UI e
 lugar de romper. El acceso queda detrás de la interfaz `chain.TxProvider` para
 poder mockearlo en tests.
 
+## D5 — Historial keyless con Blockscout por defecto (Semana 6, revisa D3)
+
+**Contexto:** D3 eligió Etherscan V2, que **exige API key gratis**. Para un
+proyecto de portfolio, obligar a quien lo prueba a registrarse en Etherscan y
+pegar una key rompe la experiencia "clona y arranca". Tras la S6, Etherscan era
+ya la *única* dependencia con key: balances y metadatos de token (`symbol()`/
+`decimals()`) van por RPC público (publicnode), sin key.
+
+**Decisión:** historial de txs **keyless por defecto vía Blockscout**, las
+instancias públicas open source (`eth`/`arbitrum`/`base`.blockscout.com y
+`explorer.optimism.io`). Etherscan pasa a ser **opcional**: solo se usa si el
+usuario define `etherscan_api_key` (TOML) o `ETHERSCAN_API_KEY` (env). La
+elección se hace en `main.go`; ambos siguen detrás de `chain.TxProvider`.
+
+**Motivo:** Blockscout expone una API **compatible con la de Etherscan**
+(`module=account&action=txlist`, mismo sobre `status/message/result` y campo
+`input` para decodificar), así que se reutiliza el parser existente
+(`parseTxList`) y la app arranca sin que nadie se registre en ningún sitio —
+mucho mejor mensaje de portfolio. Mantener Etherscan como opción no cuesta nada
+(el código y sus tests ya existen) y da salida a quien quiera más cuota. No
+revisamos el rechazo de escanear bloques de D3: sigue siendo inviable sin nodo
+indexado; solo cambiamos *qué* indexador es el predeterminado.
+
+> Rate-limit: las instancias públicas de Blockscout también limitan, pero el uso
+> real es mínimo (1 petición por wallet al abrir la pestaña o pulsar `r`), así
+> que sobra de largo.
+
 ## D4 — Decodificación de calls y metadatos de token (Semana 6)
 
 **Contexto:** las txs a contratos llegan como calldata hex (`0xa9059cbb…`). Para

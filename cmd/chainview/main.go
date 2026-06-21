@@ -37,13 +37,19 @@ func run() error {
 	client := chain.NewClient(networks)
 	defer client.Close()
 
-	// La variable de entorno tiene prioridad sobre el TOML para no obligar a
-	// dejar la API key en un archivo.
+	// Historial de txs: por defecto usamos Blockscout, que es gratis y SIN API
+	// key (la app funciona recién clonada, sin que nadie tenga que registrarse).
+	// Solo si el usuario configura una key de Etherscan usamos Etherscan. La
+	// variable de entorno tiene prioridad sobre el TOML para no obligar a dejar la
+	// key en un archivo.
 	apiKey := cfg.EtherscanAPIKey
 	if env := os.Getenv("ETHERSCAN_API_KEY"); env != "" {
 		apiKey = env
 	}
-	txProvider := chain.NewEtherscanProvider(apiKey)
+	var txProvider chain.TxProvider = chain.NewBlockscoutProvider()
+	if apiKey != "" {
+		txProvider = chain.NewEtherscanProvider(apiKey)
+	}
 
 	refresh := time.Duration(cfg.RefreshSeconds) * time.Second
 	m := ui.NewModel(client, wallets, networks, refresh, txProvider)

@@ -114,8 +114,10 @@ type etherscanTx struct {
 	Nonce           string `json:"nonce"`
 }
 
-// parseTxList traduce el cuerpo JSON de Etherscan a []Tx. Separada del HTTP para
-// poder testear el parseo con fixtures sin red.
+// parseTxList traduce el cuerpo JSON del formato Etherscan a []Tx. Separada del
+// HTTP para poder testear el parseo con fixtures sin red, y compartida por ambos
+// proveedores: Blockscout expone una API compatible con la de Etherscan, así que
+// devuelve exactamente el mismo sobre (status/message/result).
 func parseTxList(body []byte) ([]Tx, error) {
 	var resp etherscanResp
 	if err := json.Unmarshal(body, &resp); err != nil {
