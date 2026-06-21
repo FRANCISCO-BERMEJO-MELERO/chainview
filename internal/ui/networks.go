@@ -108,15 +108,39 @@ func (m *Model) toggleNetwork(id uint64) bool {
 }
 
 // onNetworksChanged refresca lo que depende de las redes activas: el gas (header
-// siempre visible) y los balances (recarga inmediata si estamos en esa pestaña).
+// siempre visible), los balances y el historial de transacciones (multi-red).
+// Recarga de inmediato la pestaña activa; las demás se recargan al entrar.
 func (m *Model) onNetworksChanged() tea.Cmd {
 	cmds := []tea.Cmd{m.fetchGasCmd()}
+
 	m.balState = stateIdle
 	if m.active == tabBalances && m.wallets.Len() > 0 {
 		m.balState = stateLoading
 		cmds = append(cmds, m.spinner.Tick, m.fetchBalancesCmd())
 	}
+
+	// El historial multi-red depende de las redes activas: lo invalidamos. Si
+	// algún filtro de red apuntaba a una red ya desactivada, lo reseteamos.
+	if m.txNetFilter != 0 && !m.prefsChainEnabled(m.txNetFilter) {
+		m.txNetFilter = 0
+	}
+	m.txState = stateIdle
+	if m.active == tabTransactions {
+		if cmd := m.loadTxsCmd(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
 	return tea.Batch(cmds...)
+}
+
+// prefsChainEnabled indica si una red sigue entre las activas.
+func (m Model) prefsChainEnabled(id uint64) bool {
+	for _, n := range m.networks {
+		if n.ChainID == id {
+			return true
+		}
+	}
+	return false
 }
 
 // renderNetworks dibuja el overlay de selección de redes centrado en el área de

@@ -113,16 +113,20 @@ type Model struct {
 	balState   loadState
 	balResults []chain.BalanceResult
 	balCursor  int
+	balFocus   bool // true = solo la wallet seleccionada; false = todas
 
-	// Pestaña Transacciones
-	txChainID    uint64
+	// Pestaña Transacciones (historial multi-red por wallet)
 	txState      loadState
-	txs          []txRow
+	txs          []txRow // fusionadas de todas las redes, ordenadas desc
 	txErr        error
-	txCursor     int
+	txCursor     int // índice sobre la lista visible (filtrada)
+	txScroll     int // desplazamiento de la ventana visible
 	txWallet     common.Address
-	txDetailOpen bool           // modal de detalle de la tx seleccionada
-	txViewport   viewport.Model // contenido scrollable del modal
+	txNetFilter  uint64          // 0 = todas las redes activas; si no, una red
+	txPage       map[uint64]int  // última página cargada por red
+	txExhausted  map[uint64]bool // redes sin más páginas
+	txDetailOpen bool            // modal de detalle de la tx seleccionada
+	txViewport   viewport.Model  // contenido scrollable del modal
 }
 
 // noticeLevel clasifica el tono de un toast del footer.
@@ -197,8 +201,8 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 		input:       ti,
 		txViewport:  vp,
 		active:      tabAccounts,
-		// El historial de txs en la v1 se consulta sobre Ethereum mainnet.
-		txChainID: chain.ChainEthereum,
+		txPage:      map[uint64]int{},
+		txExhausted: map[uint64]bool{},
 	}
 }
 
@@ -311,20 +315,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case txsLoadedMsg:
+	case txPageMsg:
 		// Descartamos resultados de una wallet que ya no es la seleccionada.
-		if msg.wallet == m.txWallet {
-			m.txs = msg.rows
-			m.txErr = nil
-			m.txState = stateLoaded
-			m.clampTxCursor()
+		if msg.wallet != m.txWallet {
+			return m, nil
 		}
-		return m, nil
-
-	case txsErrMsg:
-		if msg.wallet == m.txWallet {
-			m.txErr = msg.err
+		m.txState = stateLoaded
+		var firstErr error
+		okCount := 0
+		for _, r := range msg.results {
+			if r.err != nil {
+				if firstErr == nil {
+					firstErr = r.err
+				}
+				continue
+			}
+			okCount++
+			m.txPage[r.chainID] = r.page
+			if len(r.rows) < txPageSize {
+				m.txExhausted[r.chainID] = true
+			}
+			m.txs = append(m.txs, r.rows...)
+		}
+		m.txs = sortDedupTxRows(m.txs)
+		m.clampTxCursor()
+		// Si todas las redes fallaron y no hay nada en pantalla, es un error de
+		// verdad; si solo fallaron algunas, avisamos con un toast sin romper.
+		if okCount == 0 && firstErr != nil && len(m.txs) == 0 {
+			m.txErr = firstErr
 			m.txState = stateError
+			return m, nil
+		}
+		m.txErr = nil
+		if firstErr != nil {
+			m.setNotice(noticeError, "⚠ algunas redes fallaron al cargar txs")
+			return m, noticeClearCmd(m.noticeUntil)
 		}
 		return m, nil
 
