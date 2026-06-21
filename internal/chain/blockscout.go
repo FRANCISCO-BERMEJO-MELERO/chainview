@@ -43,7 +43,7 @@ func NewBlockscoutProvider() *BlockscoutProvider {
 }
 
 // RecentTxs consulta el historial vía Blockscout. No requiere API key.
-func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr common.Address, limit int) ([]Tx, error) {
+func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr common.Address, page, perPage int) ([]Tx, error) {
 	base, ok := p.hosts[chainID]
 	if !ok {
 		return nil, fmt.Errorf("Blockscout: red no soportada (chain id %d)", chainID)
@@ -53,8 +53,8 @@ func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr
 	q.Set("module", "account")
 	q.Set("action", "txlist")
 	q.Set("address", addr.Hex())
-	q.Set("page", "1")
-	q.Set("offset", strconv.Itoa(limit))
+	q.Set("page", strconv.Itoa(page))
+	q.Set("offset", strconv.Itoa(perPage))
 	q.Set("sort", "desc") // más recientes primero
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"?"+q.Encode(), nil)
@@ -72,5 +72,5 @@ func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr
 	if err != nil {
 		return nil, fmt.Errorf("leyendo respuesta de Blockscout: %w", err)
 	}
-	return parseTxList(body)
+	return parseTxList(body, chainID)
 }

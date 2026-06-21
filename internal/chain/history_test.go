@@ -37,7 +37,7 @@ const txListFixture = `{
 }`
 
 func TestParseTxList(t *testing.T) {
-	txs, err := parseTxList([]byte(txListFixture))
+	txs, err := parseTxList([]byte(txListFixture), ChainEthereum)
 	if err != nil {
 		t.Fatalf("parseTxList: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestParseTxList(t *testing.T) {
 
 func TestParseTxListEmpty(t *testing.T) {
 	body := []byte(`{"status":"0","message":"No transactions found","result":[]}`)
-	txs, err := parseTxList(body)
+	txs, err := parseTxList(body, ChainEthereum)
 	if err != nil {
 		t.Fatalf("'sin txs' no debería ser error: %v", err)
 	}
@@ -81,14 +81,14 @@ func TestParseTxListEmpty(t *testing.T) {
 
 func TestParseTxListAPIError(t *testing.T) {
 	body := []byte(`{"status":"0","message":"NOTOK","result":"Invalid API Key"}`)
-	if _, err := parseTxList(body); err == nil {
+	if _, err := parseTxList(body, ChainEthereum); err == nil {
 		t.Fatal("esperaba error con key inválida")
 	}
 }
 
 func TestEtherscanProviderMissingKey(t *testing.T) {
 	p := NewEtherscanProvider("")
-	_, err := p.RecentTxs(context.Background(), 1, common.Address{}, 20)
+	_, err := p.RecentTxs(context.Background(), 1, common.Address{}, 1, 20)
 	if err == nil {
 		t.Fatal("sin API key debería devolver error legible")
 	}
@@ -112,7 +112,7 @@ func TestEtherscanProviderLiveAgainstFake(t *testing.T) {
 	p := NewEtherscanProvider("secret")
 	p.baseURL = srv.URL
 
-	txs, err := p.RecentTxs(context.Background(), 1, common.HexToAddress("0x1111111111111111111111111111111111111111"), 20)
+	txs, err := p.RecentTxs(context.Background(), 1, common.HexToAddress("0x1111111111111111111111111111111111111111"), 1, 20)
 	if err != nil {
 		t.Fatalf("RecentTxs: %v", err)
 	}

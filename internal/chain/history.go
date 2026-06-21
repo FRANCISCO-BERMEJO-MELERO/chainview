@@ -22,6 +22,7 @@ const etherscanV2URL = "https://api.etherscan.io/v2/api"
 
 // Tx es una transacción normalizada para mostrar en la TUI.
 type Tx struct {
+	ChainID     uint64 // red en la que ocurrió (la rellena el provider)
 	Hash        string
 	From        common.Address
 	To          common.Address // dirección cero si es creación de contrato
@@ -38,9 +39,9 @@ type Tx struct {
 // TxProvider abstrae la fuente del historial de transacciones para poder
 // mockearla en tests (la UI depende de la interfaz, no de Etherscan).
 type TxProvider interface {
-	// RecentTxs devuelve las últimas `limit` txs de una dirección en una red,
-	// de la más reciente a la más antigua.
-	RecentTxs(ctx context.Context, chainID uint64, addr common.Address, limit int) ([]Tx, error)
+	// RecentTxs devuelve la página `page` (1-based) de `perPage` txs de una
+	// dirección en una red, de la más reciente a la más antigua.
+	RecentTxs(ctx context.Context, chainID uint64, addr common.Address, page, perPage int) ([]Tx, error)
 }
 
 // EtherscanProvider implementa TxProvider contra la API V2 de Etherscan.
@@ -61,7 +62,7 @@ func NewEtherscanProvider(apiKey string) *EtherscanProvider {
 
 // RecentTxs consulta el historial vía Etherscan V2. Devuelve un error legible si
 // falta la API key (en vez de hacer una petición que fallaría).
-func (p *EtherscanProvider) RecentTxs(ctx context.Context, chainID uint64, addr common.Address, limit int) ([]Tx, error) {
+func (p *EtherscanProvider) RecentTxs(ctx context.Context, chainID uint64, addr common.Address, page, perPage int) ([]Tx, error) {
 	if p.apiKey == "" {
 		return nil, errors.New("falta la API key de Etherscan (config etherscan_api_key o variable ETHERSCAN_API_KEY)")
 	}
@@ -73,8 +74,8 @@ func (p *EtherscanProvider) RecentTxs(ctx context.Context, chainID uint64, addr 
 	q.Set("address", addr.Hex())
 	q.Set("startblock", "0")
 	q.Set("endblock", "99999999")
-	q.Set("page", "1")
-	q.Set("offset", strconv.Itoa(limit))
+	q.Set("page", strconv.Itoa(page))
+	q.Set("offset", strconv.Itoa(perPage))
 	q.Set("sort", "desc") // más recientes primero
 	q.Set("apikey", p.apiKey)
 
@@ -93,7 +94,7 @@ func (p *EtherscanProvider) RecentTxs(ctx context.Context, chainID uint64, addr 
 	if err != nil {
 		return nil, fmt.Errorf("leyendo respuesta de Etherscan: %w", err)
 	}
-	return parseTxList(body)
+	return parseTxList(body, chainID)
 }
 
 // etherscanResp es el sobre estándar de Etherscan. Result se deja crudo porque
@@ -120,11 +121,12 @@ type etherscanTx struct {
 	Nonce           string `json:"nonce"`
 }
 
-// parseTxList traduce el cuerpo JSON del formato Etherscan a []Tx. Separada del
-// HTTP para poder testear el parseo con fixtures sin red, y compartida por ambos
-// proveedores: Blockscout expone una API compatible con la de Etherscan, así que
-// devuelve exactamente el mismo sobre (status/message/result).
-func parseTxList(body []byte) ([]Tx, error) {
+// parseTxList traduce el cuerpo JSON del formato Etherscan a []Tx, etiquetando
+// cada tx con su `chainID`. Separada del HTTP para poder testear el parseo con
+// fixtures sin red, y compartida por ambos proveedores: Blockscout expone una API
+// compatible con la de Etherscan, así que devuelve el mismo sobre
+// (status/message/result).
+func parseTxList(body []byte, chainID uint64) ([]Tx, error) {
 	var resp etherscanResp
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("respuesta de Etherscan ilegible: %w", err)
@@ -151,7 +153,9 @@ func parseTxList(body []byte) ([]Tx, error) {
 
 	txs := make([]Tx, 0, len(raw))
 	for _, r := range raw {
-		txs = append(txs, r.toTx())
+		tx := r.toTx()
+		tx.ChainID = chainID
+		txs = append(txs, tx)
 	}
 	return txs, nil
 }

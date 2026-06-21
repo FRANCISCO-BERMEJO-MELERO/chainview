@@ -31,7 +31,7 @@ func TestBlockscoutProviderLiveAgainstFake(t *testing.T) {
 	p := NewBlockscoutProvider()
 	p.hosts = map[uint64]string{ChainEthereum: srv.URL}
 
-	txs, err := p.RecentTxs(context.Background(), ChainEthereum, common.HexToAddress("0x1111111111111111111111111111111111111111"), 20)
+	txs, err := p.RecentTxs(context.Background(), ChainEthereum, common.HexToAddress("0x1111111111111111111111111111111111111111"), 1, 20)
 	if err != nil {
 		t.Fatalf("RecentTxs: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestBlockscoutProviderLiveAgainstFake(t *testing.T) {
 
 func TestBlockscoutProviderUnsupportedChain(t *testing.T) {
 	p := NewBlockscoutProvider()
-	if _, err := p.RecentTxs(context.Background(), 99999, common.Address{}, 20); err == nil {
+	if _, err := p.RecentTxs(context.Background(), 99999, common.Address{}, 1, 20); err == nil {
 		t.Fatal("una red no soportada debería devolver error")
 	}
 }
