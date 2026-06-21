@@ -231,19 +231,19 @@ func (m Model) renderTransactions() string {
 	}
 
 	if m.wallets.Len() == 0 {
-		return m.styles.Faint.Render("Añade wallets en la pestaña Cuentas para ver sus transacciones.")
+		return m.renderState("◯", "Sin wallets", "Añádelas en la pestaña Cuentas para ver sus transacciones")
 	}
-
-	header := m.styles.Faint.Render("Wallet "+m.displayName(m.txWallet)+" · "+m.networkName(m.txChainID)) + "\n\n"
 
 	switch {
 	case m.txState == stateLoading && len(m.txs) == 0:
-		return header + m.spinner.View() + " cargando transacciones…"
+		return m.renderState(m.spinner.View(), "Cargando transacciones…", "")
 	case m.txState == stateError:
-		return header + m.styles.Error.Render("error: "+m.txErr.Error())
+		return m.renderState("⚠", "No se pudo cargar el historial", m.txErr.Error()+" — pulsa r para reintentar")
 	case m.txState == stateLoaded && len(m.txs) == 0:
-		return header + m.styles.Faint.Render("Sin transacciones en "+m.networkName(m.txChainID)+".")
+		return m.renderState("◯", "Sin transacciones", "en "+m.networkName(m.txChainID))
 	}
+
+	header := m.styles.Faint.Render("Wallet "+m.displayName(m.txWallet)+" · "+m.networkName(m.txChainID)) + "\n\n"
 
 	var b strings.Builder
 	b.WriteString(header)

@@ -272,8 +272,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case spinner.TickMsg:
-		if m.balState != stateLoading {
-			return m, nil // dejamos morir el spinner al terminar la carga
+		// Mantenemos el spinner vivo mientras haya cualquier carga en curso
+		// (balances o transacciones); si no, lo dejamos morir.
+		if m.balState != stateLoading && m.txState != stateLoading {
+			return m, nil
 		}
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)

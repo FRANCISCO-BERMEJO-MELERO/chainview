@@ -108,7 +108,7 @@ func (m Model) renderAccounts() string {
 
 	addrs := m.wallets.List()
 	if len(addrs) == 0 {
-		b.WriteString(m.styles.Faint.Render("No hay wallets. Escribe una address EVM y pulsa Enter."))
+		b.WriteString(m.styles.Faint.Render("Sin wallets — escribe una address (0x…) o un nombre ENS y pulsa Enter."))
 		return b.String()
 	}
 

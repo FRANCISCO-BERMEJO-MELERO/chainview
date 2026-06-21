@@ -69,11 +69,11 @@ func (m *Model) clampBalCursor() {
 
 func (m Model) renderBalances() string {
 	if m.wallets.Len() == 0 {
-		return m.styles.Faint.Render("Añade wallets en la pestaña Cuentas para ver balances.")
+		return m.renderState("◯", "Sin wallets", "Añádelas en la pestaña Cuentas para ver balances")
 	}
-	// Primera carga sin datos previos: spinner a pantalla completa.
+	// Primera carga sin datos previos: estado de carga centrado.
 	if m.balState == stateLoading && len(m.balResults) == 0 {
-		return m.spinner.View() + " cargando balances…"
+		return m.renderState(m.spinner.View(), "Cargando balances…", "")
 	}
 
 	var b strings.Builder
