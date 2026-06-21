@@ -1,6 +1,7 @@
-# Contexto del agente IA (no es parte del repo público)
+# Contexto del agente IA y notas internas (no son parte del repo público)
 context.md
 tasks.json
+docs/
 
 # Binarios y artefactos de build
 /bin/
