@@ -76,10 +76,12 @@ func (m Model) renderHeaderBar(w int) string {
 	return bar(m.styles.Brand.Render("CHAINVIEW"), m.renderGasHeader(), w)
 }
 
-// renderStatusBar pinta el estado/atajos contextuales (izq.) y los atajos
-// globales (der.). El contenido vivo del estado se enriquece en pasos posteriores.
+// renderStatusBar pinta el estado vivo (izq.) y la leyenda de atajos (der.). La
+// leyenda se ajusta al ancho que deja libre la parte izquierda.
 func (m Model) renderStatusBar(w int) string {
-	return bar(m.statusLeft(), m.statusRight(), w)
+	left := m.statusLeft()
+	avail := w - lipgloss.Width(left) - 1 // -1: hueco mínimo entre ambos
+	return bar(left, m.statusRight(avail), w)
 }
 
 // statusLeft muestra el toast activo o, si no hay, el estado vivo: frescura del
@@ -103,32 +105,54 @@ func (m Model) statusLeft() string {
 	return m.styles.Faint.Render(fmt.Sprintf("%s · %d/%d redes ok", fresh, m.gasOK, m.gasTotal))
 }
 
-// statusRight muestra los atajos contextuales + el acceso a la ayuda.
-func (m Model) statusRight() string {
+// statusRight compone la leyenda de atajos de la derecha. Cada atajo es un par
+// "tecla acción"; se incluyen, por orden de importancia, los que quepan enteros en
+// `avail` (nunca a medias), y siempre se mantiene el sufijo global (ayuda/salir).
+// Los atajos que no quepan siguen documentados en el overlay de ayuda (?).
+func (m Model) statusRight(avail int) string {
 	if m.helpOpen {
-		return m.styles.Faint.Render("? / esc cerrar")
+		return m.styles.Faint.Render("? · esc cerrar")
 	}
 	if m.networksOpen {
 		return m.styles.Faint.Render("espacio conmutar · esc cerrar")
 	}
-	return m.styles.Faint.Render(m.contextHint() + " · ? ayuda · q salir")
+
+	// Sufijo global, siempre presente. En Cuentas se escribe en el input, así que
+	// 'q' no sale (se sale con ctrl+c).
+	suffix := "? ayuda · q salir"
+	if m.active == tabAccounts {
+		suffix = "? ayuda · ctrl+c salir"
+	}
+
+	const sep = " · "
+	used := lipgloss.Width(suffix)
+	parts := make([]string, 0)
+	for _, it := range m.hintItems() {
+		if used+lipgloss.Width(sep)+lipgloss.Width(it) > avail {
+			break
+		}
+		parts = append(parts, it)
+		used += lipgloss.Width(sep) + lipgloss.Width(it)
+	}
+	parts = append(parts, suffix)
+	return m.styles.Faint.Render(strings.Join(parts, sep))
 }
 
-// contextHint son los atajos relevantes de la pestaña activa, en versión corta
-// para el footer (la lista completa vive en el overlay de ayuda).
-func (m Model) contextHint() string {
+// hintItems son los atajos contextuales de la pestaña activa como pares "tecla
+// acción", ordenados de más a menos importante (la leyenda incluye los que quepan).
+func (m Model) hintItems() []string {
 	switch m.active {
 	case tabAccounts:
-		return "enter añadir · ctrl+d borrar · ↑↓ mover"
+		return []string{"enter añadir", "ctrl+d borrar", "↑↓ mover"}
 	case tabBalances:
-		return "↑↓ · f wallet · e CSV · r · n redes"
+		return []string{"f filtrar", "e exportar", "r recargar", "n redes", "↑↓ mover"}
 	case tabTransactions:
 		if m.txDetailOpen {
-			return "↑↓ desplazar · esc cerrar"
+			return []string{"↑↓ desplazar", "esc cerrar"}
 		}
-		return "↑↓ · enter · f red · m más · e CSV · r"
+		return []string{"enter detalle", "f filtrar red", "m cargar más", "e exportar", "r recargar", "n redes", "↑↓ mover"}
 	}
-	return ""
+	return nil
 }
 
 // renderContent dibuja el cuerpo de la pestaña activa, recortado y rellenado al
