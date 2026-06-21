@@ -243,37 +243,47 @@ func (m Model) renderTransactions() string {
 		return m.renderState("◯", "Sin transacciones", "en "+m.networkName(m.txChainID))
 	}
 
-	header := m.styles.Faint.Render("Wallet "+m.displayName(m.txWallet)+" · "+m.networkName(m.txChainID)) + "\n\n"
+	cols := txColumns()
+	widths := layoutColumns(cols, m.contentW)
 
 	var b strings.Builder
-	b.WriteString(header)
+	// Contexto: wallet en primer plano, red como dato secundario.
+	b.WriteString(m.styles.Balance.Render(m.displayName(m.txWallet)) +
+		m.styles.Faint.Render(" · "+m.networkName(m.txChainID)) + "\n\n")
 	if m.txState == stateLoading {
 		b.WriteString(m.styles.Faint.Render(m.spinner.View()+" actualizando…") + "\n")
 	}
-	b.WriteString(m.styles.Faint.Render(fit("Tx", 12) + fit("Detalle", 42) + fit("Cuándo", 11) + "Estado"))
-	b.WriteString("\n")
+	b.WriteString(m.tableHeader(cols, widths) + "\n")
+	b.WriteString(m.tableRule(widths) + "\n")
 
 	for i, row := range m.txs {
-		hash := fit(row.tx.Hash[:10]+"…", 12)
-		detail := fit(row.detail, 42)
-		when := fit(humanizeSince(row.tx.Timestamp), 11)
-
-		status := "ok"
+		// Estado reforzado con símbolo (no solo color): ✓ ok / ✗ fallida.
+		statusCell := styledCell("✓ ok", m.styles.Ok)
 		if !row.tx.Success {
-			status = "fallida"
+			statusCell = styledCell("✗ fallida", m.styles.Error)
 		}
 
-		switch {
-		case i == m.txCursor:
-			b.WriteString(m.styles.Balance.Render("› " + hash + detail + when + status))
-		case !row.tx.Success:
-			b.WriteString("  " + hash + detail + when + m.styles.Error.Render(status))
-		default:
-			b.WriteString("  " + hash + detail + when + status)
+		cells := []tcell{
+			styledCell(row.tx.Hash[:10]+"…", m.styles.Faint),
+			txt(row.detail),
+			styledCell(humanizeSince(row.tx.Timestamp), m.styles.Faint),
+			statusCell,
 		}
+		b.WriteString(m.tableRow(cols, widths, cells, i == m.txCursor))
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// txColumns define las columnas de la tabla de transacciones. La descripción es
+// la columna flex (absorbe el ancho sobrante); el momento se alinea a la derecha.
+func txColumns() []column {
+	return []column{
+		{title: "Tx", align: alignLeft, min: 11},
+		{title: "Detalle", align: alignLeft, min: 20, flex: true},
+		{title: "Cuándo", align: alignRight, min: 8},
+		{title: "Estado", align: alignLeft, min: 9},
+	}
 }
 
 // humanizeSince da una marca temporal relativa y compacta (hace 3h, hace 2d).

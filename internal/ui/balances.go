@@ -78,6 +78,19 @@ func (m *Model) clampBalCursor() {
 	}
 }
 
+// balanceColumns define las columnas de la tabla de balances. El espaciador flex
+// empuja el balance (número + símbolo) contra el borde derecho, de modo que los
+// importes queden alineados a la derecha y sean fáciles de comparar.
+func balanceColumns() []column {
+	return []column{
+		{title: "Wallet", align: alignLeft, min: 16},
+		{title: "Red", align: alignLeft, min: 12},
+		{title: "", align: alignLeft, min: 1, flex: true}, // espaciador
+		{title: "Balance", align: alignRight, min: 12},
+		{title: "", align: alignLeft, min: 5}, // símbolo
+	}
+}
+
 func (m Model) renderBalances() string {
 	if m.wallets.Len() == 0 {
 		return m.renderState("◯", "Sin wallets", "Añádelas en la pestaña Cuentas para ver balances")
@@ -87,34 +100,39 @@ func (m Model) renderBalances() string {
 		return m.renderState(m.spinner.View(), "Cargando balances…", "")
 	}
 
+	cols := balanceColumns()
+	widths := layoutColumns(cols, m.contentW)
+
 	var b strings.Builder
-	b.WriteString(m.styles.Faint.Render(fit("Wallet", 16) + fit("Red", 14) + "Balance"))
-	b.WriteString("\n")
 	if m.balState == stateLoading {
 		// Refresco con datos ya en pantalla.
 		b.WriteString(m.styles.Faint.Render(m.spinner.View()+" actualizando…") + "\n")
 	}
+	b.WriteString(m.tableHeader(cols, widths) + "\n")
+	b.WriteString(m.tableRule(widths) + "\n")
 
 	for i, r := range m.balResults {
-		wallet := fit(m.displayName(r.Address), 16)
-		red := fit(m.networkName(r.ChainID), 14)
+		wallet := m.displayName(r.Address)
+		red := m.networkName(r.ChainID)
 
-		var bal string
-		switch {
-		case r.Err != nil:
-			bal = "error"
-		default:
-			bal = chain.FormatEther(r.Wei) + " " + m.networkSymbol(r.ChainID)
+		// Importe a la derecha + símbolo como dato secundario; en error, un guion
+		// neutro y "error" en rojo en la columna del símbolo.
+		amount, symbol := chain.FormatEther(r.Wei), m.networkSymbol(r.ChainID)
+		amountCell := styledCell(amount, m.styles.Balance)
+		symbolCell := styledCell(symbol, m.styles.Symbol)
+		if r.Err != nil {
+			amountCell = styledCell("—", m.styles.Faint)
+			symbolCell = styledCell("error", m.styles.Error)
 		}
 
-		switch {
-		case i == m.balCursor:
-			b.WriteString(m.styles.Balance.Render("› " + wallet + red + bal))
-		case r.Err != nil:
-			b.WriteString("  " + wallet + red + m.styles.Error.Render(bal))
-		default:
-			b.WriteString("  " + wallet + red + bal)
+		cells := []tcell{
+			txt(wallet),
+			styledCell(red, m.styles.Faint),
+			txt(""), // espaciador
+			amountCell,
+			symbolCell,
 		}
+		b.WriteString(m.tableRow(cols, widths, cells, i == m.balCursor))
 		b.WriteString("\n")
 	}
 	return b.String()
