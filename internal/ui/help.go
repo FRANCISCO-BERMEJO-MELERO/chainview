@@ -35,12 +35,15 @@ func keyGroups() []keyGroup {
 		}},
 		{"Balances", []keyHelp{
 			{"↑ ↓", "moverse por la tabla"},
+			{"f", "alternar todas / la wallet seleccionada"},
 			{"r", "recargar balances"},
 		}},
 		{"Transacciones", []keyHelp{
 			{"↑ ↓", "moverse por la lista"},
 			{"enter", "ver el detalle de la tx"},
 			{"esc", "cerrar el detalle"},
+			{"f", "filtrar por red (cicla)"},
+			{"m", "cargar más (página siguiente)"},
 			{"r", "recargar historial"},
 		}},
 	}

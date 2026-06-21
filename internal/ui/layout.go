@@ -121,12 +121,12 @@ func (m Model) contextHint() string {
 	case tabAccounts:
 		return "enter añadir · ctrl+d borrar · ↑↓ mover"
 	case tabBalances:
-		return "↑↓ mover · r recargar · n redes"
+		return "↑↓ · f wallet · r recargar · n redes"
 	case tabTransactions:
 		if m.txDetailOpen {
 			return "↑↓ desplazar · esc cerrar"
 		}
-		return "↑↓ · enter detalle · r recargar"
+		return "↑↓ · enter detalle · f red · m más · r"
 	}
 	return ""
 }
