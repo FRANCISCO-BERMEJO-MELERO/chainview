@@ -11,6 +11,7 @@ const (
 	colorText   = "#E5E7EB" // texto principal
 	colorFaint  = "#6B7280" // texto tenue (ayudas, secundario)
 	colorError  = "#F87171" // errores
+	colorGreen  = "#34D399" // tendencia a la baja (gas más barato)
 	colorBorder = "#3F3F5A" // bordes de paneles
 )
 
@@ -26,6 +27,8 @@ type Styles struct {
 	Faint       lipgloss.Style
 	Spinner     lipgloss.Style
 	Balance     lipgloss.Style
+	TrendUp     lipgloss.Style // gas sube (rojo)
+	TrendDown   lipgloss.Style // gas baja (verde)
 }
 
 // DefaultStyles devuelve el tema por defecto (violeta + verde menta).
@@ -62,6 +65,14 @@ func DefaultStyles() Styles {
 
 		Balance: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(colorMint)).
+			Bold(true),
+
+		TrendUp: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorError)).
+			Bold(true),
+
+		TrendDown: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colorGreen)).
 			Bold(true),
 	}
 }

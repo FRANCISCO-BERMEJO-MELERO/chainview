@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -65,6 +66,11 @@ type Model struct {
 	// para mostrarlos sin tocar la red en el render.
 	ensNames map[common.Address]string
 
+	// gas guarda el último gas price por red (en wei) y gasPrev el anterior, para
+	// calcular la tendencia ↑/↓ en el header.
+	gas     map[uint64]*big.Int
+	gasPrev map[uint64]*big.Int
+
 	spinner spinner.Model
 	active  tab
 	width   int
@@ -125,6 +131,8 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 		txProvider: txProvider,
 		ens:        ens,
 		ensNames:   make(map[common.Address]string),
+		gas:        make(map[uint64]*big.Int),
+		gasPrev:    make(map[uint64]*big.Int),
 		spinner:    sp,
 		input:      ti,
 		txViewport: vp,
@@ -134,10 +142,15 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	}
 }
 
-// Init arranca el bucle de refresco periódico de balances y resuelve los nombres
-// ENS de las wallets ya seguidas.
+// Init arranca los bucles de refresco (balances y gas), una primera lectura de
+// gas inmediata y la resolución ENS de las wallets ya seguidas.
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(refreshTickCmd(m.refresh), m.resolveWalletNamesCmd())
+	return tea.Batch(
+		refreshTickCmd(m.refresh),
+		gasTickCmd(m.refresh),
+		m.fetchGasCmd(),
+		m.resolveWalletNamesCmd(),
+	)
 }
 
 // Update enruta cada mensaje. Las teclas globales (salir, cambiar pestaña) se
@@ -231,6 +244,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.clampAccCursor()
 		return m, nil
 
+	case gasTickMsg:
+		// El gas se refresca siempre (el header está visible en todas las tabs).
+		return m, tea.Batch(gasTickCmd(m.refresh), m.fetchGasCmd())
+
+	case gasMsg:
+		for _, r := range msg.results {
+			if r.Err != nil || r.Wei == nil {
+				continue // conservamos el último valor bueno de esa red
+			}
+			if cur, ok := m.gas[r.ChainID]; ok {
+				m.gasPrev[r.ChainID] = cur // el actual pasa a ser el anterior
+			}
+			m.gas[r.ChainID] = r.Wei
+		}
+		return m, nil
+
 	case refreshTickMsg:
 		// El tick siempre se reprograma; solo refrescamos si estamos viendo
 		// Balances, hay wallets y no hay ya una carga en vuelo (anti-solape).
@@ -294,6 +323,8 @@ func (m Model) View() tea.View {
 	var b strings.Builder
 
 	b.WriteString(m.styles.Title.Render(assets.Title))
+	b.WriteString("\n\n")
+	b.WriteString(m.renderGasHeader())
 	b.WriteString("\n\n")
 	b.WriteString(m.renderTabs())
 	b.WriteString("\n\n")
