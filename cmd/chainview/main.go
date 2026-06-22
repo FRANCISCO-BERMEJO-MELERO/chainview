@@ -64,7 +64,9 @@ func run() error {
 	prices := chain.NewDefiLlamaPrices(networks)
 
 	refresh := time.Duration(cfg.RefreshSeconds) * time.Second
-	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prices, cfg.FiatCurrency, nil, prefs)
+	// El descubrimiento de tokens (1.2) usa siempre Blockscout (keyless), aunque el
+	// historial de txs vaya por Etherscan.
+	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prices, cfg.FiatCurrency, blockscout, prefs)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return err
 	}

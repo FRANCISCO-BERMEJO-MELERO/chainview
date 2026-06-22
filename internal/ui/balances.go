@@ -75,10 +75,11 @@ func (m Model) fetchBalancesCmd() tea.Cmd {
 	client := m.client
 	addrs := m.wallets.List()
 	networks := m.networks
+	tokens := m.tokenProvider
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
-		return balancesMsg{results: client.FetchAll(ctx, addrs, networks)}
+		return balancesMsg{results: client.FetchAll(ctx, addrs, networks, tokens)}
 	}
 }
 
