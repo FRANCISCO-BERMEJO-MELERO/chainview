@@ -1,19 +1,26 @@
 # chainview
 
 Monitor de wallets EVM en el terminal (TUI), watch-only. Sigue balances,
-historial de transacciones y gas en tiempo real sobre Ethereum, Arbitrum, Base y
-Optimism — **sin registrarte en ningún sitio ni configurar nada**.
+tokens, valor en fiat, historial de transacciones y gas en tiempo real sobre
+Ethereum, Arbitrum, Base, Optimism, Polygon, Scroll y Linea (y cualquier red EVM
+que añadas) — **sin registrarte en ningún sitio ni configurar nada**.
 
 ## Características
 
 - **Balances multi-cuenta y multi-red** en una tabla, con refresco automático.
+- **Tokens ERC-20**: descubre y muestra los tokens de cada wallet, no solo el
+  saldo nativo.
+- **Valoración en fiat**: precio en USD por activo y **total de cartera**, vía
+  DefiLlama (keyless).
 - **Historial de transacciones** con la acción decodificada (`Transfer 100 USDC
   → 0x…`) y un modal de detalle por transacción.
 - **Nombres ENS**: muestra `vitalik.eth` en vez de la address, y puedes añadir
   cuentas tanto por address como por nombre ENS.
 - **Gas tracker** en vivo con tendencia por red.
-- **Keyless**: el historial usa Blockscout y los balances RPC públicos; cero
-  API keys para empezar.
+- **Redes configurables**: añade cualquier cadena EVM desde el TOML (chainID +
+  RPC + explorador) sin recompilar.
+- **Keyless**: precios (DefiLlama), tokens e historial (Blockscout) y balances
+  (RPC públicos); cero API keys para empezar.
 
 ## Instalación
 
@@ -55,8 +62,9 @@ cp config.example.toml ~/.config/chainview/config.toml
 ```
 
 Ver [`config.example.toml`](./config.example.toml) para todas las opciones:
-intervalo de refresco, overrides de RPC por red, y la API key opcional de
-Etherscan (`ETHERSCAN_API_KEY` como variable de entorno tiene prioridad).
+intervalo de refresco, moneda fiat, overrides de RPC por red, alta de redes
+personalizadas (`[[network]]`), y la API key opcional de Etherscan
+(`ETHERSCAN_API_KEY` como variable de entorno tiene prioridad).
 
 ## Licencia
 
