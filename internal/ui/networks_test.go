@@ -37,11 +37,12 @@ func TestEnabledNetworksDefaults(t *testing.T) {
 
 func TestToggleNetworkDisablesAndPersists(t *testing.T) {
 	m := netModel()
+	all := len(chain.DefaultNetworks())
 	if ok := m.toggleNetwork(chain.ChainBase); !ok {
 		t.Fatal("desactivar Base debería poder")
 	}
-	if len(m.networks) != 3 {
-		t.Errorf("tras desactivar Base hay %d redes, quiero 3", len(m.networks))
+	if len(m.networks) != all-1 {
+		t.Errorf("tras desactivar Base hay %d redes, quiero %d", len(m.networks), all-1)
 	}
 	for _, n := range m.networks {
 		if n.ChainID == chain.ChainBase {
@@ -55,16 +56,18 @@ func TestToggleNetworkDisablesAndPersists(t *testing.T) {
 	if ok := m.toggleNetwork(chain.ChainBase); !ok {
 		t.Fatal("reactivar Base debería poder")
 	}
-	if len(m.networks) != 4 {
-		t.Errorf("tras reactivar hay %d redes, quiero 4", len(m.networks))
+	if len(m.networks) != all {
+		t.Errorf("tras reactivar hay %d redes, quiero %d", len(m.networks), all)
 	}
 }
 
 func TestToggleNetworkKeepsAtLeastOne(t *testing.T) {
 	m := netModel()
-	// Dejar solo Ethereum activa.
-	for _, id := range []uint64{chain.ChainArbitrum, chain.ChainBase, chain.ChainOptimism} {
-		m.toggleNetwork(id)
+	// Dejar solo Ethereum activa: desactivamos todas las demás del catálogo.
+	for _, n := range chain.DefaultNetworks() {
+		if n.ChainID != chain.ChainEthereum {
+			m.toggleNetwork(n.ChainID)
+		}
 	}
 	if len(m.networks) != 1 {
 		t.Fatalf("preparación: quedan %d redes, quiero 1", len(m.networks))

@@ -84,8 +84,8 @@ func TestClampScroll(t *testing.T) {
 func TestActiveTxChainsRespectsFilter(t *testing.T) {
 	m := testModel(80, 24)
 	m.networks = chain.DefaultNetworks()
-	if got := len(m.activeTxChains()); got != 4 {
-		t.Errorf("sin filtro = %d redes, quiero 4", got)
+	if got := len(m.activeTxChains()); got != len(chain.DefaultNetworks()) {
+		t.Errorf("sin filtro = %d redes, quiero %d", got, len(chain.DefaultNetworks()))
 	}
 	m.txNetFilter = chain.ChainBase
 	got := m.activeTxChains()

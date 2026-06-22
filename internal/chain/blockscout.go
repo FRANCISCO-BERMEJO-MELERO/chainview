@@ -12,32 +12,31 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// blockscoutHosts son las instancias públicas de Blockscout por chain ID. Son
-// gratuitas y SIN API key: ese es justamente el motivo de usarlas por defecto
-// (la app arranca sin que nadie tenga que registrarse en ningún sitio). A
-// diferencia de Etherscan V2 (endpoint único con ?chainid=), Blockscout tiene un
-// host por red. Optimism sirve su instancia bajo explorer.optimism.io.
-var blockscoutHosts = map[uint64]string{
-	ChainEthereum: "https://eth.blockscout.com/api",
-	ChainArbitrum: "https://arbitrum.blockscout.com/api",
-	ChainBase:     "https://base.blockscout.com/api",
-	ChainOptimism: "https://explorer.optimism.io/api",
-}
-
 // BlockscoutProvider implementa TxProvider contra las instancias públicas de
-// Blockscout. Blockscout expone una API compatible con la de Etherscan
-// (module=account&action=txlist), así que reutilizamos el mismo parser
-// (parseTxList) que el proveedor de Etherscan.
+// Blockscout. Son gratuitas y SIN API key: ese es el motivo de usarlas por
+// defecto (la app arranca sin que nadie tenga que registrarse). Blockscout expone
+// una API compatible con la de Etherscan (module=account&action=txlist), así que
+// reutilizamos el mismo parser (parseTxList) que el proveedor de Etherscan.
+//
+// A diferencia de Etherscan V2 (endpoint único con ?chainid=), Blockscout tiene
+// un host por red; los hosts se derivan del campo BlockscoutAPI de cada Network,
+// de modo que una red definida en el TOML funciona sin tocar código.
 type BlockscoutProvider struct {
 	hosts map[uint64]string // chain ID -> base URL del API
 	http  *http.Client
 }
 
-// NewBlockscoutProvider crea el proveedor keyless con los hosts públicos por
-// defecto.
-func NewBlockscoutProvider() *BlockscoutProvider {
+// NewBlockscoutProvider crea el proveedor keyless tomando el host de cada red de
+// su BlockscoutAPI. Las redes sin BlockscoutAPI quedan fuera (sin txs).
+func NewBlockscoutProvider(networks []Network) *BlockscoutProvider {
+	hosts := make(map[uint64]string, len(networks))
+	for _, n := range networks {
+		if n.BlockscoutAPI != "" {
+			hosts[n.ChainID] = n.BlockscoutAPI
+		}
+	}
 	return &BlockscoutProvider{
-		hosts: blockscoutHosts,
+		hosts: hosts,
 		http:  &http.Client{Timeout: 15 * time.Second},
 	}
 }

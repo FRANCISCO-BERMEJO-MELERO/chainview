@@ -51,7 +51,8 @@ func run() error {
 	if env := os.Getenv("ETHERSCAN_API_KEY"); env != "" {
 		apiKey = env
 	}
-	var txProvider chain.TxProvider = chain.NewBlockscoutProvider()
+	blockscout := chain.NewBlockscoutProvider(networks)
+	var txProvider chain.TxProvider = blockscout
 	if apiKey != "" {
 		txProvider = chain.NewEtherscanProvider(apiKey)
 	}

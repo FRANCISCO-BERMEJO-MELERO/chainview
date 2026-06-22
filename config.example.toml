@@ -23,3 +23,26 @@ refresh_seconds = 15
 # arbitrum = "https://arb-mainnet.g.alchemy.com/v2/TU_KEY"
 # base     = "https://base-mainnet.g.alchemy.com/v2/TU_KEY"
 # optimism = "https://opt-mainnet.g.alchemy.com/v2/TU_KEY"
+
+# Redes adicionales o personalizadas. Cada bloque [[network]] añade una red EVM
+# nueva (por chain_id) o sobreescribe una del catálogo por defecto. Solo los
+# campos que pongas se aplican; el resto se hereda de la red por defecto.
+#
+# Catálogo por defecto: Ethereum, Arbitrum One, Base, Optimism, Polygon, Scroll,
+# Linea. Para añadir, por ejemplo, BNB Chain:
+#
+# [[network]]
+# key            = "bsc"
+# name           = "BNB Chain"
+# chain_id       = 56
+# rpc_url        = "https://bsc-rpc.publicnode.com"
+# symbol         = "BNB"
+# explorer       = "https://bscscan.com"
+# blockscout_api = "https://bsc.blockscout.com/api"   # txs + tokens (opcional)
+# price_chain    = "bsc"                               # slug DefiLlama para tokens
+# native_coin_id = "binancecoin"                       # id CoinGecko del nativo
+#
+# Para sobreescribir solo el RPC de una red existente basta el chain_id:
+# [[network]]
+# chain_id = 137
+# rpc_url  = "https://polygon-mainnet.g.alchemy.com/v2/TU_KEY"
