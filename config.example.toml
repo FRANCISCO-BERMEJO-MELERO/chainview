@@ -10,6 +10,10 @@
 # Cada cuántos segundos se refrescan los balances (polling). Por defecto: 15.
 refresh_seconds = 15
 
+# Moneda de valoración fiat de los saldos. Por defecto: usd.
+# (v1 solo soporta USD; más monedas llegarán en una versión posterior.)
+fiat_currency = "usd"
+
 # API key de Etherscan. OPCIONAL: por defecto el historial de transacciones se
 # obtiene de Blockscout SIN ninguna key. Si defines una key, chainview usará
 # Etherscan en su lugar. Tiene prioridad la variable de entorno ETHERSCAN_API_KEY.

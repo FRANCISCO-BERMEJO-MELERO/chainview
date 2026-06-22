@@ -60,6 +60,16 @@ type Model struct {
 	txProvider chain.TxProvider
 	ens        *chain.ENSResolver
 
+	// Valoración fiat (1.1): proveedor de precios, moneda configurada y el último
+	// precio por activo (nativo o token) tasado, para mostrar valor por celda y el
+	// total de la cartera.
+	priceProvider chain.PriceProvider
+	fiatCurrency  string
+	prices        map[chain.PriceQuery]float64
+
+	// Descubrimiento de tokens ERC-20 (1.2). Keyless (Blockscout); nil lo desactiva.
+	tokenProvider chain.TokenBalanceProvider
+
 	// ensNames cachea en el Model los nombres ENS ya resueltos (address -> nombre)
 	// para mostrarlos sin tocar la red en el render.
 	ensNames map[common.Address]string
@@ -160,7 +170,7 @@ func noticeClearCmd(at time.Time) tea.Cmd {
 // NewModel construye el modelo raíz inyectando todas las dependencias: cliente
 // de cadena, almacenamiento de wallets, redes efectivas (con overrides de config)
 // e intervalo de refresco.
-func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider, ens *chain.ENSResolver, prefs *storage.Prefs) Model {
+func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider, ens *chain.ENSResolver, prices chain.PriceProvider, fiatCurrency string, tokens chain.TokenBalanceProvider, prefs *storage.Prefs) Model {
 	styles := DefaultStyles()
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Dot),
@@ -182,15 +192,19 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	vp.SetHeight(16)
 
 	return Model{
-		styles:      styles,
-		client:      client,
-		wallets:     wallets,
-		networks:    enabledNetworks(networks, prefs),
-		allNetworks: networks,
-		refresh:     refresh,
-		txProvider:  txProvider,
-		ens:         ens,
-		prefs:       prefs,
+		styles:        styles,
+		client:        client,
+		wallets:       wallets,
+		networks:      enabledNetworks(networks, prefs),
+		allNetworks:   networks,
+		refresh:       refresh,
+		txProvider:    txProvider,
+		ens:           ens,
+		priceProvider: prices,
+		fiatCurrency:  fiatCurrency,
+		prices:        make(map[chain.PriceQuery]float64),
+		tokenProvider: tokens,
+		prefs:         prefs,
 		// Mostramos la portada al arrancar salvo que el usuario pidiera ocultarla.
 		showWelcome: prefs == nil || !prefs.HideWelcome,
 		welcomeHide: prefs != nil && prefs.HideWelcome,
@@ -309,9 +323,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.balResults = msg.results
 		m.balState = stateLoaded
 		m.clampBalCursor()
+		// Tasamos en fiat lo que acabamos de cargar (1.1).
+		cmds := []tea.Cmd{m.fetchPricesCmd()}
 		if n := countBalanceErrors(msg.results); n > 0 {
 			m.setNotice(noticeError, fmt.Sprintf("⚠ %d balance(s) no se cargaron", n))
-			return m, noticeClearCmd(m.noticeUntil)
+			cmds = append(cmds, noticeClearCmd(m.noticeUntil))
+		}
+		return m, tea.Batch(cmds...)
+
+	case pricesMsg:
+		for q, price := range msg.prices {
+			m.prices[q] = price
 		}
 		return m, nil
 

@@ -2,6 +2,8 @@ package ui
 
 import (
 	"context"
+	"math/big"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,6 +16,49 @@ import (
 // balancesMsg transporta el resultado del fetch concurrente de balances.
 type balancesMsg struct {
 	results []chain.BalanceResult
+}
+
+// pricesMsg transporta los precios fiat tasados para los activos en pantalla.
+type pricesMsg struct {
+	prices map[chain.PriceQuery]float64
+}
+
+// fetchPricesCmd tasa en fiat los activos presentes en los balances cargados. Va
+// en background y captura el proveedor por valor; un fallo de tasación no rompe la
+// tabla (las celdas sin precio muestran "—").
+func (m Model) fetchPricesCmd() tea.Cmd {
+	provider := m.priceProvider
+	qs := m.priceQueries()
+	if provider == nil || len(qs) == 0 {
+		return nil
+	}
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		prices, _ := provider.Prices(ctx, qs)
+		return pricesMsg{prices: prices}
+	}
+}
+
+// priceQueries reúne, sin duplicados, los activos a tasar a partir de los balances
+// actuales: el nativo de cada red presente (y, con 1.2, los tokens de cada celda).
+func (m Model) priceQueries() []chain.PriceQuery {
+	seen := map[chain.PriceQuery]struct{}{}
+	var qs []chain.PriceQuery
+	add := func(q chain.PriceQuery) {
+		if _, ok := seen[q]; ok {
+			return
+		}
+		seen[q] = struct{}{}
+		qs = append(qs, q)
+	}
+	for _, r := range m.balResults {
+		add(chain.PriceQuery{ChainID: r.ChainID}) // nativo
+		for _, t := range r.Tokens {
+			add(chain.PriceQuery{ChainID: r.ChainID, Token: t.Token})
+		}
+	}
+	return qs
 }
 
 // refreshTickMsg lo emite el tick periódico de refresco.
@@ -46,7 +91,7 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.balCursor--
 		}
 	case "down":
-		if m.balCursor < len(m.visibleBalances())-1 {
+		if m.balCursor < len(m.visibleRows())-1 {
 			m.balCursor++
 		}
 	case "f":
@@ -95,12 +140,47 @@ func countBalanceErrors(results []chain.BalanceResult) int {
 }
 
 func (m *Model) clampBalCursor() {
-	if m.balCursor >= len(m.visibleBalances()) {
-		m.balCursor = len(m.visibleBalances()) - 1
+	if m.balCursor >= len(m.visibleRows()) {
+		m.balCursor = len(m.visibleRows()) - 1
 	}
 	if m.balCursor < 0 {
 		m.balCursor = 0
 	}
+}
+
+// balRow es una fila aplanada de la tabla de Balances: o el saldo nativo de una
+// wallet en una red, o uno de sus tokens ERC-20 (token != nil). El cursor indexa
+// esta lista plana.
+type balRow struct {
+	address common.Address
+	chainID uint64
+	wei     *big.Int            // saldo nativo (solo si token == nil)
+	err     error               // error del nativo (solo si token == nil)
+	token   *chain.TokenBalance // si != nil, la fila es de un ERC-20
+}
+
+// visibleRows aplana los balances visibles a filas: cada wallet×red aporta su
+// fila nativa seguida de sus tokens, ordenados por valor fiat desc (los tasables
+// arriba) y, a igualdad, por símbolo (orden que ya trae el provider).
+func (m Model) visibleRows() []balRow {
+	vis := m.visibleBalances()
+	rows := make([]balRow, 0, len(vis))
+	for _, r := range vis {
+		r := r
+		rows = append(rows, balRow{address: r.Address, chainID: r.ChainID, wei: r.Wei, err: r.Err})
+
+		toks := append([]chain.TokenBalance(nil), r.Tokens...)
+		sort.SliceStable(toks, func(i, j int) bool {
+			vi, _ := m.fiatValue(chain.PriceQuery{ChainID: r.ChainID, Token: toks[i].Token}, toks[i].Balance, toks[i].Decimals)
+			vj, _ := m.fiatValue(chain.PriceQuery{ChainID: r.ChainID, Token: toks[j].Token}, toks[j].Balance, toks[j].Decimals)
+			return vi > vj
+		})
+		for k := range toks {
+			t := toks[k]
+			rows = append(rows, balRow{address: r.Address, chainID: r.ChainID, token: &t})
+		}
+	}
+	return rows
 }
 
 // balanceColumns define las columnas de la tabla de balances. El espaciador flex
@@ -112,8 +192,63 @@ func balanceColumns() []column {
 		{title: "Red", align: alignLeft, min: 12},
 		{title: "", align: alignLeft, min: 1, flex: true}, // espaciador
 		{title: "Balance", align: alignRight, min: 12},
-		{title: "", align: alignLeft, min: 5}, // símbolo
+		{title: "", align: alignLeft, min: 5},        // símbolo
+		{title: "Valor", align: alignRight, min: 12}, // valor fiat (1.1)
 	}
+}
+
+// weiToFloat convierte un entero en unidades mínimas a su valor decimal (float),
+// para multiplicarlo por un precio fiat. Es solo para presentación: una pérdida de
+// precisión de coma flotante en el último céntimo es irrelevante aquí.
+func weiToFloat(v *big.Int, decimals uint8) float64 {
+	if v == nil || v.Sign() == 0 {
+		return 0
+	}
+	f := new(big.Float).SetInt(v)
+	div := new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil))
+	out, _ := new(big.Float).Quo(f, div).Float64()
+	return out
+}
+
+// fiatValue devuelve el valor fiat de una cantidad y si se pudo tasar (hay precio).
+func (m Model) fiatValue(q chain.PriceQuery, amount *big.Int, decimals uint8) (float64, bool) {
+	price, ok := m.prices[q]
+	if !ok {
+		return 0, false
+	}
+	return weiToFloat(amount, decimals) * price, true
+}
+
+// fiatCell construye la celda de valor: el importe en fiat si hay precio, o un
+// guion atenuado si el activo aún no se ha podido tasar.
+func (m Model) fiatCell(q chain.PriceQuery, amount *big.Int, decimals uint8) tcell {
+	if v, ok := m.fiatValue(q, amount, decimals); ok {
+		return styledCell(chain.FormatFiat(v, m.fiatCurrency), m.styles.Balance)
+	}
+	return styledCell("—", m.styles.Faint)
+}
+
+// visibleFiatTotal suma el valor fiat de las celdas visibles que se han podido
+// tasar (nativo + tokens). El segundo valor es false si no se tasó ninguna, para
+// no mostrar un "Total: $0.00" engañoso antes de que lleguen los precios.
+func (m Model) visibleFiatTotal(vis []chain.BalanceResult) (float64, bool) {
+	var total float64
+	priced := false
+	for _, r := range vis {
+		if r.Err == nil {
+			if v, ok := m.fiatValue(chain.PriceQuery{ChainID: r.ChainID}, r.Wei, 18); ok {
+				total += v
+				priced = true
+			}
+		}
+		for _, t := range r.Tokens {
+			if v, ok := m.fiatValue(chain.PriceQuery{ChainID: r.ChainID, Token: t.Token}, t.Balance, t.Decimals); ok {
+				total += v
+				priced = true
+			}
+		}
+	}
+	return total, priced
 }
 
 func (m Model) renderBalances() string {
@@ -141,36 +276,63 @@ func (m Model) renderBalances() string {
 		ctx += m.styles.Faint.Render("  " + m.spinner.View())
 	}
 
+	// Total de la cartera (1.1): suma del valor fiat de las celdas visibles que se
+	// han podido tasar. Se alinea a la derecha de la línea de contexto.
+	total, anyPriced := m.visibleFiatTotal(vis)
+	if anyPriced {
+		totalStr := m.styles.Faint.Render("Total: ") +
+			m.styles.Balance.Render(chain.FormatFiat(total, m.fiatCurrency))
+		ctx = bar(ctx, totalStr, m.contentW)
+	}
+
 	var b strings.Builder
 	b.WriteString(ctx + "\n\n")
 	b.WriteString(m.tableHeader(cols, widths) + "\n")
 	b.WriteString(m.tableRule(widths) + "\n")
 
-	for i, r := range vis {
-		wallet := m.displayName(r.Address)
-		red := m.networkName(r.ChainID)
-
-		// Importe a la derecha + símbolo como dato secundario; en error, un guion
-		// neutro y "error" en rojo en la columna del símbolo.
-		amount, symbol := chain.FormatEther(r.Wei), m.networkSymbol(r.ChainID)
-		amountCell := styledCell(amount, m.styles.Balance)
-		symbolCell := styledCell(symbol, m.styles.Symbol)
-		if r.Err != nil {
-			amountCell = styledCell("—", m.styles.Faint)
-			symbolCell = styledCell("error", m.styles.Error)
-		}
-
-		cells := []tcell{
-			txt(wallet),
-			styledCell(red, m.styles.Faint),
-			txt(""), // espaciador
-			amountCell,
-			symbolCell,
-		}
+	for i, row := range m.visibleRows() {
+		cells := m.balanceCells(row)
 		b.WriteString(m.tableRow(cols, widths, cells, i == m.balCursor))
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// balanceCells construye las celdas de una fila de Balances, ya sea el saldo
+// nativo o un token ERC-20 (que cuelga del nativo con sangría).
+func (m Model) balanceCells(row balRow) []tcell {
+	if row.token != nil {
+		t := row.token
+		amount := chain.FormatUnits(t.Balance, int(t.Decimals))
+		valueCell := m.fiatCell(chain.PriceQuery{ChainID: row.chainID, Token: t.Token}, t.Balance, t.Decimals)
+		return []tcell{
+			txt(""), // bajo la wallet
+			styledCell("  ↳ token", m.styles.Faint),
+			txt(""), // espaciador
+			styledCell(amount, m.styles.Balance),
+			styledCell(t.Symbol, m.styles.Symbol),
+			valueCell,
+		}
+	}
+
+	// Importe a la derecha + símbolo como dato secundario; en error, un guion
+	// neutro y "error" en rojo en la columna del símbolo.
+	amountCell := styledCell(chain.FormatEther(row.wei), m.styles.Balance)
+	symbolCell := styledCell(m.networkSymbol(row.chainID), m.styles.Symbol)
+	valueCell := m.fiatCell(chain.PriceQuery{ChainID: row.chainID}, row.wei, 18)
+	if row.err != nil {
+		amountCell = styledCell("—", m.styles.Faint)
+		symbolCell = styledCell("error", m.styles.Error)
+		valueCell = styledCell("", m.styles.Faint)
+	}
+	return []tcell{
+		txt(m.displayName(row.address)),
+		styledCell(m.networkName(row.chainID), m.styles.Faint),
+		txt(""), // espaciador
+		amountCell,
+		symbolCell,
+		valueCell,
+	}
 }
 
 // networkName resuelve el nombre legible de una red por su chain ID.

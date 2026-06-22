@@ -137,6 +137,29 @@ name     = "SinRPC"
 	}
 }
 
+func TestFiatCurrencyDefaultAndSanitize(t *testing.T) {
+	dir := t.TempDir()
+
+	// Sin archivo: default usd.
+	cfg, _ := loadFrom(filepath.Join(dir, "missing.toml"))
+	if cfg.FiatCurrency != "usd" {
+		t.Fatalf("default FiatCurrency = %q, quiero usd", cfg.FiatCurrency)
+	}
+
+	// Mayúsculas se normalizan a minúsculas.
+	path := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(path, []byte(`fiat_currency = "USD"`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := loadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.FiatCurrency != "usd" {
+		t.Fatalf("FiatCurrency = %q, quiero usd (normalizado)", cfg.FiatCurrency)
+	}
+}
+
 func TestRefreshSecondsSanitized(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.toml")
 	if err := os.WriteFile(path, []byte("refresh_seconds = 0\n"), 0o600); err != nil {

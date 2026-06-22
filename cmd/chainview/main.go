@@ -60,8 +60,11 @@ func run() error {
 	// Resolver ENS (solo mainnet) sobre la conexión del cliente; con caché propia.
 	ens := chain.NewENSResolver(client)
 
+	// Precios fiat keyless (DefiLlama) para valorar saldos y total de cartera.
+	prices := chain.NewDefiLlamaPrices(networks)
+
 	refresh := time.Duration(cfg.RefreshSeconds) * time.Second
-	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prefs)
+	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prices, cfg.FiatCurrency, nil, prefs)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return err
 	}

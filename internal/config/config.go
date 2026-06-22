@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
@@ -23,10 +24,16 @@ const configPath = "chainview/config.toml"
 // (decisión D2: polling cada ~15 s).
 const defaultRefreshSeconds = 15
 
+// defaultFiatCurrency es la moneda de valoración por defecto (1.1). v1 solo
+// soporta USD; más monedas son una mejora post-V1.
+const defaultFiatCurrency = "usd"
+
 // Config es la configuración efectiva de la app.
 type Config struct {
 	// RefreshSeconds es cada cuántos segundos se refrescan los balances.
 	RefreshSeconds int `toml:"refresh_seconds"`
+	// FiatCurrency es la moneda de valoración (1.1). v1: solo "usd".
+	FiatCurrency string `toml:"fiat_currency"`
 	// EtherscanAPIKey es OPCIONAL. Por defecto el historial de txs se obtiene de
 	// Blockscout sin ninguna key; si se define esta key (en el TOML o en la
 	// variable de entorno ETHERSCAN_API_KEY, que tiene prioridad), se usa
@@ -60,6 +67,7 @@ type NetworkConfig struct {
 func Default() Config {
 	return Config{
 		RefreshSeconds: defaultRefreshSeconds,
+		FiatCurrency:   defaultFiatCurrency,
 		RPC:            map[string]string{},
 	}
 }
@@ -94,6 +102,10 @@ func loadFrom(path string) (Config, error) {
 	if cfg.RefreshSeconds <= 0 {
 		cfg.RefreshSeconds = defaultRefreshSeconds
 	}
+	if strings.TrimSpace(cfg.FiatCurrency) == "" {
+		cfg.FiatCurrency = defaultFiatCurrency
+	}
+	cfg.FiatCurrency = strings.ToLower(cfg.FiatCurrency)
 	if cfg.RPC == nil {
 		cfg.RPC = map[string]string{}
 	}

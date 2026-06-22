@@ -84,7 +84,7 @@ func TestTableRowSelectedSpansFullWidth(t *testing.T) {
 	m := testModel(80, 24)
 	cols := balanceColumns()
 	widths := layoutColumns(cols, m.contentW)
-	cells := []tcell{txt("vitalik.eth"), txt("Ethereum"), txt(""), txt("1.2345"), txt("ETH")}
+	cells := []tcell{txt("vitalik.eth"), txt("Ethereum"), txt(""), txt("1.2345"), txt("ETH"), txt("$3,210.55")}
 
 	row := m.tableRow(cols, widths, cells, true)
 	if got := lipgloss.Width(row); got != tableWidth(widths) {

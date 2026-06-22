@@ -2,6 +2,7 @@ package chain
 
 import (
 	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -47,4 +48,53 @@ func FormatUnits(value *big.Int, decimals int) string {
 // FormatEther es un atajo para FormatUnits con los 18 decimales del ETH.
 func FormatEther(wei *big.Int) string {
 	return FormatUnits(wei, 18)
+}
+
+// fiatSymbols asocia los códigos de moneda con su símbolo. Lo no listado se
+// formatea con el código en mayúsculas como sufijo (p.ej. "1,234.56 GBP").
+var fiatSymbols = map[string]string{
+	"usd": "$",
+	"eur": "€",
+}
+
+// FormatFiat formatea un importe en la moneda dada, con dos decimales y separador
+// de miles, para que los valores de la cartera sean fáciles de leer y comparar.
+// Ejemplo (usd): 8421.07 -> "$8,421.07".
+func FormatFiat(value float64, currency string) string {
+	currency = strings.ToLower(currency)
+	num := groupThousands(strconv.FormatFloat(value, 'f', 2, 64))
+	if sym, ok := fiatSymbols[currency]; ok {
+		return sym + num
+	}
+	if currency == "" {
+		return num
+	}
+	return num + " " + strings.ToUpper(currency)
+}
+
+// groupThousands inserta comas como separador de millares en la parte entera de
+// un decimal ya formateado ("8421.07" -> "8,421.07"). Respeta el signo.
+func groupThousands(s string) string {
+	neg := strings.HasPrefix(s, "-")
+	s = strings.TrimPrefix(s, "-")
+
+	intPart, frac := s, ""
+	if i := strings.IndexByte(s, '.'); i >= 0 {
+		intPart, frac = s[:i], s[i:]
+	}
+
+	var b strings.Builder
+	n := len(intPart)
+	for i, ch := range intPart {
+		if i > 0 && (n-i)%3 == 0 {
+			b.WriteByte(',')
+		}
+		b.WriteRune(ch)
+	}
+
+	out := b.String() + frac
+	if neg {
+		out = "-" + out
+	}
+	return out
 }

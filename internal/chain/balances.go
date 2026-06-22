@@ -21,6 +21,25 @@ type BalanceResult struct {
 	Address common.Address
 	Wei     *big.Int
 	Err     error
+
+	// Tokens son los ERC-20 que la wallet tiene en esta red (1.2). Lo puebla
+	// FetchAll cuando hay un TokenBalanceProvider; vacío si no.
+	Tokens    []TokenBalance
+	TokensErr error // error del descubrimiento de tokens, aislado del nativo
+}
+
+// TokenBalance es el saldo de un ERC-20 concreto de una wallet en una red (1.2).
+type TokenBalance struct {
+	Token    common.Address
+	Symbol   string
+	Decimals uint8
+	Balance  *big.Int // cantidad en unidades mínimas (sin escalar por decimals)
+}
+
+// TokenBalanceProvider descubre los ERC-20 que una address tiene en una red. La
+// UI depende de la interfaz (no de Blockscout) para poder mockearla en tests.
+type TokenBalanceProvider interface {
+	TokenBalances(ctx context.Context, chainID uint64, addr common.Address) ([]TokenBalance, error)
 }
 
 // FetchAll consulta en paralelo el balance de cada (address × network) y
