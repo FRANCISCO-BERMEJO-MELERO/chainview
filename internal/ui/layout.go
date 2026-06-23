@@ -186,6 +186,9 @@ func (m Model) renderContent() string {
 	if m.helpOpen {
 		return m.renderHelp()
 	}
+	if m.debugOpen {
+		return m.renderDebug()
+	}
 	if m.networksOpen {
 		return m.renderNetworks()
 	}

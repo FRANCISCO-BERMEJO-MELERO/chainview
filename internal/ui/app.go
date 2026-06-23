@@ -103,6 +103,7 @@ type Model struct {
 	spinner        spinner.Model
 	active         tab
 	helpOpen       bool // overlay de ayuda (?) visible
+	debugOpen      bool // overlay de métricas/debug (ctrl+g) visible (3.3)
 	networksOpen   bool // overlay de selección de redes (n) visible
 	networksCursor int
 	width          int
@@ -273,6 +274,13 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	}
 }
 
+// WithDebug arranca con el overlay de métricas/debug visible (flag --debug). Es
+// un setter encadenable para no alargar más la firma de NewModel.
+func (m Model) WithDebug(on bool) Model {
+	m.debugOpen = on
+	return m
+}
+
 // Init arranca los bucles de refresco (balances y gas), una primera lectura de
 // gas inmediata y la resolución ENS de las wallets ya seguidas.
 func (m Model) Init() tea.Cmd {
@@ -350,6 +358,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.String() == "?" {
 			m.helpOpen = true
+			return m, nil
+		}
+		// El overlay de debug (3.3) se conmuta con ctrl+g; mientras está abierto,
+		// ctrl+g/esc/q lo cierran y el resto de teclas se ignoran.
+		if m.debugOpen {
+			switch msg.String() {
+			case "ctrl+g", "esc", "q":
+				m.debugOpen = false
+			}
+			return m, nil
+		}
+		if msg.String() == "ctrl+g" {
+			m.debugOpen = true
 			return m, nil
 		}
 		// ctrl+k abre la paleta de comandos (global, no choca con el input porque no

@@ -53,6 +53,35 @@ func TestCachedBigTTL(t *testing.T) {
 	}
 }
 
+func TestClientStats(t *testing.T) {
+	c := NewClient(nil)
+	fetch := func(context.Context) (*big.Int, error) { return big.NewInt(1), nil }
+
+	// 1ª lectura: miss (cuenta como llamada RPC). 2ª: hit de caché.
+	_, _ = c.cachedBig(context.Background(), "k", 1, fetch)
+	_, _ = c.cachedBig(context.Background(), "k", 1, fetch)
+	if s := c.Stats(); s.RPCCalls != 1 || s.CacheHits != 1 {
+		t.Fatalf("tras miss+hit: RPCCalls=%d CacheHits=%d, quiero 1/1", s.RPCCalls, s.CacheHits)
+	}
+
+	// Envejecemos la entrada y forzamos un 429: cuenta el intento, el rate-limit y
+	// el valor viejo servido durante el cooldown.
+	c.rpcCache["k"] = rpcEntry{val: big.NewInt(1), at: time.Now().Add(-2 * rpcTTL)}
+	_, _ = c.cachedBig(context.Background(), "k", 1, func(context.Context) (*big.Int, error) {
+		return nil, errors.New("429 Too Many Requests")
+	})
+	s := c.Stats()
+	if s.RPCCalls != 2 {
+		t.Errorf("RPCCalls = %d, quiero 2 (incluye el intento que dio 429)", s.RPCCalls)
+	}
+	if s.RateLimitHits != 1 {
+		t.Errorf("RateLimitHits = %d, quiero 1", s.RateLimitHits)
+	}
+	if s.StaleServed != 1 {
+		t.Errorf("StaleServed = %d, quiero 1", s.StaleServed)
+	}
+}
+
 func TestCachedBigBackoff(t *testing.T) {
 	c := NewClient(nil)
 

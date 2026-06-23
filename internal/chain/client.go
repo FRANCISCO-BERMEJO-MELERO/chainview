@@ -3,6 +3,7 @@ package chain
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -29,6 +30,35 @@ type Client struct {
 	rpcCache map[string]rpcEntry  // balances/gas cacheados con TTL, por clave
 	cooldown map[uint64]time.Time // chain ID -> hasta cuándo está en cooldown por 429
 	sf       singleflight.Group   // coalescing de lecturas RPC idénticas concurrentes
+
+	stats clientStats // contadores de observabilidad (3.3)
+}
+
+// clientStats acumula contadores de observabilidad de la caché RPC (3.3).
+// Thread-safe vía atómicos: los tea.Cmd corren en goroutines concurrentes.
+type clientStats struct {
+	rpcCalls      atomic.Uint64 // lecturas reales contra el RPC (miss de caché)
+	cacheHits     atomic.Uint64 // servidas desde caché con TTL fresco
+	rateLimitHits atomic.Uint64 // respuestas 429 detectadas
+	staleServed   atomic.Uint64 // valores viejos servidos durante un cooldown
+}
+
+// Stats es una instantánea de los contadores del cliente para el overlay de debug.
+type Stats struct {
+	RPCCalls      uint64
+	CacheHits     uint64
+	RateLimitHits uint64
+	StaleServed   uint64
+}
+
+// Stats devuelve una instantánea de los contadores de la caché RPC.
+func (c *Client) Stats() Stats {
+	return Stats{
+		RPCCalls:      c.stats.rpcCalls.Load(),
+		CacheHits:     c.stats.cacheHits.Load(),
+		RateLimitHits: c.stats.rateLimitHits.Load(),
+		StaleServed:   c.stats.staleServed.Load(),
+	}
 }
 
 // tokenEntry es una entrada de la caché de metadatos de token. Guardamos también

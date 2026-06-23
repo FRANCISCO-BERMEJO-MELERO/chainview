@@ -20,6 +20,20 @@ func main() {
 	}
 }
 
+// debugEnabled indica si arrancar con el overlay de métricas/debug visible (3.3),
+// vía la flag --debug o la variable de entorno CHAINVIEW_DEBUG=1.
+func debugEnabled() bool {
+	if os.Getenv("CHAINVIEW_DEBUG") == "1" {
+		return true
+	}
+	for _, a := range os.Args[1:] {
+		if a == "--debug" || a == "-debug" {
+			return true
+		}
+	}
+	return false
+}
+
 // run monta las dependencias y arranca la TUI. Se separa de main para que los
 // defer (cerrar el cliente) se ejecuten siempre.
 func run() error {
@@ -66,7 +80,8 @@ func run() error {
 	refresh := time.Duration(cfg.RefreshSeconds) * time.Second
 	// El descubrimiento de tokens (1.2) usa siempre Blockscout (keyless), aunque el
 	// historial de txs vaya por Etherscan.
-	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prices, cfg.FiatCurrency, blockscout, cfg.Theme, prefs)
+	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prices, cfg.FiatCurrency, blockscout, cfg.Theme, prefs).
+		WithDebug(debugEnabled())
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return err
 	}

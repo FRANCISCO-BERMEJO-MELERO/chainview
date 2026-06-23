@@ -24,6 +24,7 @@ func keyGroups() []keyGroup {
 		{"Global", []keyHelp{
 			{"tab / shift+tab", "cambiar de pestaña"},
 			{"ctrl+k", "paleta de comandos (buscar/ir/acciones)"},
+			{"ctrl+g", "métricas / modo debug"},
 			{"n", "elegir redes visibles"},
 			{"?", "abrir/cerrar esta ayuda"},
 			{"q", "salir"},

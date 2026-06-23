@@ -61,6 +61,7 @@ func (c *Client) cachedBig(ctx context.Context, key string, chainID uint64, fetc
 	// (1) Valor fresco en caché.
 	if e, ok := c.rpcCache[key]; ok && now.Sub(e.at) < rpcTTL {
 		c.rpcMu.Unlock()
+		c.stats.cacheHits.Add(1)
 		return e.val, nil
 	}
 	// (2) Red en cooldown por rate-limit: servimos lo último que tengamos.
@@ -68,6 +69,7 @@ func (c *Client) cachedBig(ctx context.Context, key string, chainID uint64, fetc
 		e, cached := c.rpcCache[key]
 		c.rpcMu.Unlock()
 		if cached {
+			c.stats.staleServed.Add(1)
 			return e.val, nil
 		}
 		return nil, errRateLimited
@@ -75,18 +77,21 @@ func (c *Client) cachedBig(ctx context.Context, key string, chainID uint64, fetc
 	c.rpcMu.Unlock()
 
 	// (3) Lectura real, coalescida: varias peticiones de la misma clave a la vez
-	// comparten una sola llamada RPC.
+	// comparten una sola llamada RPC (el contador sube una vez por fetch real).
 	v, err, _ := c.sf.Do(key, func() (interface{}, error) {
+		c.stats.rpcCalls.Add(1)
 		return fetch(ctx)
 	})
 
 	if err != nil {
 		if isRateLimit(err) {
+			c.stats.rateLimitHits.Add(1)
 			c.rpcMu.Lock()
 			c.cooldown[chainID] = time.Now().Add(rpcCooldown)
 			e, cached := c.rpcCache[key]
 			c.rpcMu.Unlock()
 			if cached {
+				c.stats.staleServed.Add(1)
 				return e.val, nil // servimos valor viejo durante el cooldown
 			}
 		}
