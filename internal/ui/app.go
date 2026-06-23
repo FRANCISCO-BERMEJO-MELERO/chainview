@@ -132,6 +132,15 @@ type Model struct {
 	// entre redes. Reutiliza txViewport (solo uno abierto a la vez, en otra tab).
 	walletDetailOpen bool
 
+	// Paleta de comandos (2.2): overlay global de búsqueda difusa de acciones.
+	paletteOpen   bool
+	paletteInput  textinput.Model
+	paletteCursor int
+
+	// Tour de primera vez (2.10): recorrido guiado tras la portada.
+	tourActive bool
+	tourStep   int
+
 	// Pestaña Balances
 	balState   loadState
 	balResults []chain.BalanceResult
@@ -220,6 +229,17 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	vp.SetWidth(72)
 	vp.SetHeight(16)
 
+	// Input de la paleta de comandos (2.2).
+	pi := textinput.New()
+	pi.Placeholder = "Buscar comando…"
+	pi.Prompt = "› "
+	pi.CharLimit = 48
+
+	// El tour (2.10) lo lanza la portada al cerrarse; si la portada está oculta
+	// (usuario que la desactivó), arranca directo en el primer uso pendiente.
+	showWelcome := prefs == nil || !prefs.HideWelcome
+	startTourNow := !showWelcome && prefs != nil && !prefs.TourDone
+
 	return Model{
 		styles:        styles,
 		client:        client,
@@ -237,17 +257,19 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 		themeNow:      themeNow,
 		prefs:         prefs,
 		// Mostramos la portada al arrancar salvo que el usuario pidiera ocultarla.
-		showWelcome: prefs == nil || !prefs.HideWelcome,
-		welcomeHide: prefs != nil && prefs.HideWelcome,
-		ensNames:    make(map[common.Address]string),
-		gas:         make(map[uint64]*big.Int),
-		gasPrev:     make(map[uint64]*big.Int),
-		spinner:     sp,
-		input:       ti,
-		txViewport:  vp,
-		active:      tabAccounts,
-		txPage:      map[uint64]int{},
-		txExhausted: map[uint64]bool{},
+		showWelcome:  showWelcome,
+		welcomeHide:  prefs != nil && prefs.HideWelcome,
+		tourActive:   startTourNow,
+		ensNames:     make(map[common.Address]string),
+		gas:          make(map[uint64]*big.Int),
+		gasPrev:      make(map[uint64]*big.Int),
+		spinner:      sp,
+		input:        ti,
+		txViewport:   vp,
+		paletteInput: pi,
+		active:       tabAccounts,
+		txPage:       map[uint64]int{},
+		txExhausted:  map[uint64]bool{},
 	}
 }
 
@@ -273,6 +295,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.contentW, m.contentH = contentDims(msg.Width, msg.Height)
 		if m.contentW > 8 {
 			m.input.SetWidth(m.contentW - 4)
+			m.paletteInput.SetWidth(m.contentW - 12)
 		}
 		// El modal de detalle de tx vive en el área de contenido; le dejamos 2
 		// líneas para su propia pista de ayuda.
@@ -300,8 +323,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.prefs != nil && m.welcomeHide != m.prefs.HideWelcome {
 					_ = m.prefs.SetHideWelcome(m.welcomeHide)
 				}
+				m.maybeStartTour() // primer arranque: lanzar el tour guiado (2.10)
 			}
 			return m, nil
+		}
+		// El tour de primera vez (2.10) captura el teclado mientras está activo.
+		if m.tourActive {
+			return m.updateTour(msg)
+		}
+		// La paleta de comandos (2.2) captura el teclado mientras está abierta.
+		if m.paletteOpen {
+			return m.updatePalette(msg)
 		}
 		// El overlay de selección de redes captura el teclado mientras está abierto.
 		if m.networksOpen {
@@ -318,6 +350,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.String() == "?" {
 			m.helpOpen = true
+			return m, nil
+		}
+		// ctrl+k abre la paleta de comandos (global, no choca con el input porque no
+		// es una letra). Cerrar las modales/overlay activos antes.
+		if msg.String() == "ctrl+k" {
+			m.paletteOpen = true
+			m.txDetailOpen = false
+			m.walletDetailOpen = false
+			m.paletteInput.Reset()
+			m.paletteInput.Focus()
+			m.paletteCursor = 0
 			return m, nil
 		}
 		// 'n' abre la selección de redes. Solo fuera de Cuentas (allí 'n' se escribe

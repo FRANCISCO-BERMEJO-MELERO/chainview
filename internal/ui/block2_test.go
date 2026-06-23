@@ -5,54 +5,46 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/chain"
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/storage"
 )
 
-// keyMsg construye un KeyPressMsg para los tests del bloque 2.
-func keyMsg(s string) tea.KeyPressMsg {
-	switch s {
-	case "ctrl+d":
-		return tea.KeyPressMsg{Mod: tea.ModCtrl, Code: 'd'}
-	case "esc":
-		return tea.KeyPressMsg{Code: tea.KeyEscape}
-	default:
-		return tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
+// --- 2.2 command palette ---
+
+func TestFuzzyScore(t *testing.T) {
+	if _, ok := fuzzyScore("", "lo que sea"); !ok {
+		t.Error("query vacía debería casar siempre")
+	}
+	if _, ok := fuzzyScore("blc", "Balances"); !ok {
+		t.Error("\"blc\" es subsecuencia de \"Balances\"")
+	}
+	if _, ok := fuzzyScore("xyz", "Balances"); ok {
+		t.Error("\"xyz\" no debería casar con \"Balances\"")
+	}
+	// Coincidencia al inicio de palabra puntúa más que dispersa.
+	start, _ := fuzzyScore("arb", "Arbitrum One")
+	spread, _ := fuzzyScore("arb", "Para abrir")
+	if start <= spread {
+		t.Errorf("inicio de palabra (%d) debería puntuar más que disperso (%d)", start, spread)
 	}
 }
 
-// --- 2.8 confirmación de borrado ---
-
-func TestConfirmDeleteRequiresTwoPresses(t *testing.T) {
-	if keyMsg("ctrl+d").String() != "ctrl+d" {
-		t.Fatalf("el helper de teclas no produce ctrl+d, got %q", keyMsg("ctrl+d").String())
-	}
-	ws := &storage.Wallets{}
-	_ = ws.Add("0x1111111111111111111111111111111111111111")
+func TestFilteredCommandsRanksByQuery(t *testing.T) {
 	m := testModel(80, 24)
-	m.wallets = ws
-	m.active = tabAccounts
+	m.paletteInput = textinput.New()
+	m.paletteInput.SetValue("balances")
 
-	// Primer ctrl+d: arma la confirmación, no borra.
-	r1, _ := m.updateAccounts(keyMsg("ctrl+d"))
-	m1 := r1.(Model)
-	if !m1.confirmDel || m1.wallets.Len() != 1 {
-		t.Fatalf("primer ctrl+d: confirmDel=%v len=%d, esperaba true/1", m1.confirmDel, m1.wallets.Len())
+	got := m.filteredCommands()
+	if len(got) == 0 {
+		t.Fatal("esperaba al menos un comando para \"balances\"")
 	}
-	// esc cancela.
-	r2, _ := m1.updateAccounts(keyMsg("esc"))
-	m2 := r2.(Model)
-	if m2.confirmDel || m2.wallets.Len() != 1 {
-		t.Fatalf("esc debería cancelar la confirmación sin borrar")
-	}
-	// Dos ctrl+d seguidos: borra.
-	r3, _ := m2.updateAccounts(keyMsg("ctrl+d"))
-	r4, _ := r3.(Model).updateAccounts(keyMsg("ctrl+d"))
-	if got := r4.(Model).wallets.Len(); got != 0 {
-		t.Errorf("dos ctrl+d deberían borrar la wallet, quedan %d", got)
+	if !strings.Contains(got[0].label, "Balances") {
+		t.Errorf("primer resultado para \"balances\" = %q, esperaba uno con Balances", got[0].label)
 	}
 }
 
@@ -115,5 +107,105 @@ func TestExplorerURLs(t *testing.T) {
 	m.allNetworks = m.networks
 	if _, ok := m.explorerAddressURL(999, addr); ok {
 		t.Error("una red sin Explorer no debería dar URL")
+	}
+}
+
+// --- 2.8 confirmación de borrado ---
+
+func keyMsg(s string) tea.KeyPressMsg {
+	switch s {
+	case "ctrl+d":
+		return tea.KeyPressMsg{Mod: tea.ModCtrl, Code: 'd'}
+	case "esc":
+		return tea.KeyPressMsg{Code: tea.KeyEscape}
+	default:
+		return tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
+	}
+}
+
+func TestConfirmDeleteRequiresTwoPresses(t *testing.T) {
+	if keyMsg("ctrl+d").String() != "ctrl+d" {
+		t.Fatalf("el helper de teclas no produce ctrl+d, got %q", keyMsg("ctrl+d").String())
+	}
+	ws := &storage.Wallets{}
+	_ = ws.Add("0x1111111111111111111111111111111111111111")
+	m := testModel(80, 24)
+	m.wallets = ws
+	m.active = tabAccounts
+
+	// Primer ctrl+d: arma la confirmación, no borra.
+	r1, _ := m.updateAccounts(keyMsg("ctrl+d"))
+	m1 := r1.(Model)
+	if !m1.confirmDel || m1.wallets.Len() != 1 {
+		t.Fatalf("primer ctrl+d: confirmDel=%v len=%d, esperaba true/1", m1.confirmDel, m1.wallets.Len())
+	}
+	// esc cancela.
+	r2, _ := m1.updateAccounts(keyMsg("esc"))
+	m2 := r2.(Model)
+	if m2.confirmDel || m2.wallets.Len() != 1 {
+		t.Fatalf("esc debería cancelar la confirmación sin borrar")
+	}
+	// Dos ctrl+d seguidos: borra.
+	r3, _ := m2.updateAccounts(keyMsg("ctrl+d"))
+	r4, _ := r3.(Model).updateAccounts(keyMsg("ctrl+d"))
+	if got := r4.(Model).wallets.Len(); got != 0 {
+		t.Errorf("dos ctrl+d deberían borrar la wallet, quedan %d", got)
+	}
+}
+
+// --- 2.9 indicador rate-limited ---
+
+func TestRateLimitedSuffixNilClient(t *testing.T) {
+	m := testModel(80, 24) // sin client
+	if s := m.rateLimitedSuffix(); s != "" {
+		t.Errorf("sin client el sufijo debería ser vacío, got %q", s)
+	}
+}
+
+// --- render de overlays nuevos ---
+
+func TestNewOverlaysFitFrame(t *testing.T) {
+	cases := map[string]func(*Model){
+		"paleta": func(m *Model) {
+			m.paletteOpen = true
+			m.paletteInput = textinput.New()
+		},
+		"tour": func(m *Model) {
+			m.tourActive = true
+			m.tourStep = 1
+		},
+	}
+	for name, setup := range cases {
+		m := testModel(80, 24)
+		setup(&m)
+		out := m.renderFrame()
+		if w := lipgloss.Width(out); w != 80 {
+			t.Errorf("%s: ancho del frame = %d, quiero 80", name, w)
+		}
+		if h := lipgloss.Height(out); h != 24 {
+			t.Errorf("%s: alto del frame = %d, quiero 24", name, h)
+		}
+	}
+}
+
+// --- 2.10 tour ---
+
+func TestTourAdvancesAndFinishes(t *testing.T) {
+	m := testModel(80, 24)
+	m.prefs = &storage.Prefs{}
+	m.tourActive = true
+	m.tourStep = 0
+	steps := len(tourSteps())
+	for i := 0; i < steps-1; i++ {
+		r, _ := m.updateTour(keyMsg("enter"))
+		m = r.(Model)
+	}
+	if m.tourStep != steps-1 || !m.tourActive {
+		t.Fatalf("tras %d avances esperaba estar en el último paso aún activo", steps-1)
+	}
+	// Un enter más en el último paso termina el tour.
+	r, _ := m.updateTour(keyMsg("enter"))
+	if r.(Model).tourActive {
+		t.Error("el último enter debería terminar el tour")
 	}
 }

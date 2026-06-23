@@ -34,11 +34,20 @@ type Prefs struct {
 	// Theme es el tema elegido por el usuario en caliente (dark/light/auto).
 	// Vacío = usar el de la config TOML. Tiene prioridad sobre la config.
 	Theme string `json:"theme,omitempty"`
+
+	// TourDone indica que el usuario ya hizo (o saltó) el tour de bienvenida.
+	TourDone bool `json:"tour_done,omitempty"`
 }
 
 // SetTheme fija el tema elegido en caliente y lo persiste.
 func (p *Prefs) SetTheme(name string) error {
 	p.Theme = name
+	return p.save()
+}
+
+// SetTourDone marca el tour como completado/saltado y lo persiste.
+func (p *Prefs) SetTourDone(v bool) error {
+	p.TourDone = v
 	return p.save()
 }
 

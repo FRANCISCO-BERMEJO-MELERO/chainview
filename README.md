@@ -17,6 +17,12 @@ que añadas) — **sin registrarte en ningún sitio ni configurar nada**.
 - **Nombres ENS**: muestra `vitalik.eth` en vez de la address, y puedes añadir
   cuentas tanto por address como por nombre ENS.
 - **Gas tracker** en vivo con tendencia por red.
+- **Paleta de comandos** (`Ctrl+K`): busca wallets, redes y acciones con filtrado
+  difuso, sin recordar atajos.
+- **Temas** claro/oscuro con detección automática del fondo del terminal
+  (configurable y alternable en caliente).
+- **Atajos de productividad**: copiar address/hash (`y`), abrir en el explorador
+  (`o`), ordenar columnas (`s`) y detalle agregado de wallet entre redes.
 - **Redes configurables**: añade cualquier cadena EVM desde el TOML (chainID +
   RPC + explorador) sin recompilar.
 - **Keyless**: precios (DefiLlama), tokens e historial (Blockscout) y balances
@@ -42,16 +48,22 @@ nombre ENS (`vitalik.eth`) y pulsa Enter. Cambia de pestaña con `tab`.
 
 ### Atajos
 
-| Tecla            | Acción                                   |
-| ---------------- | ---------------------------------------- |
-| `tab` / `↹⇧`     | Cambiar de pestaña                       |
-| `?`              | Mostrar/ocultar la ayuda                 |
-| `↑` `↓`          | Moverse por listas y tablas              |
-| `enter`          | Añadir wallet / ver detalle de tx        |
-| `ctrl+d`         | Borrar la wallet seleccionada            |
-| `r`              | Recargar balances / transacciones        |
-| `esc`            | Cerrar modal de detalle / ayuda          |
-| `q` / `ctrl+c`   | Salir                                     |
+| Tecla            | Acción                                          |
+| ---------------- | ----------------------------------------------- |
+| `tab` / `↹⇧`     | Cambiar de pestaña                              |
+| `ctrl+k`         | Paleta de comandos (buscar/ir/acciones)         |
+| `?`              | Mostrar/ocultar la ayuda                        |
+| `↑` `↓`          | Moverse por listas y tablas                     |
+| `enter`          | Añadir wallet / detalle de wallet o de tx       |
+| `ctrl+d`         | Borrar la wallet seleccionada (confirma con otro `ctrl+d`) |
+| `y` / `o`        | Copiar address/hash / abrir en el explorador    |
+| `s` / `S`        | Ordenar columna / invertir el orden             |
+| `f`              | Filtrar (wallet en Balances, red en Txs)        |
+| `n`              | Elegir redes visibles                           |
+| `e`              | Exportar a CSV                                  |
+| `r`              | Recargar balances / transacciones               |
+| `esc`            | Cerrar modal / overlay                          |
+| `q` / `ctrl+c`   | Salir                                           |
 
 ## Configuración
 

@@ -95,14 +95,30 @@ func (m Model) statusLeft() string {
 		return style.Render(m.notice)
 	}
 	if m.lastGas.IsZero() {
-		return m.styles.Faint.Render("⟳ cargando…")
+		return m.styles.Faint.Render("⟳ cargando…") + m.rateLimitedSuffix()
 	}
 	fresh := "⟳ " + sinceShort(m.lastGas)
 	if m.gasTotal > 0 && m.gasOK < m.gasTotal {
 		return m.styles.Faint.Render(fresh+" · ") +
-			m.styles.NoticeError.Render(fmt.Sprintf("%d/%d redes con error", m.gasTotal-m.gasOK, m.gasTotal))
+			m.styles.NoticeError.Render(fmt.Sprintf("%d/%d redes con error", m.gasTotal-m.gasOK, m.gasTotal)) +
+			m.rateLimitedSuffix()
 	}
-	return m.styles.Faint.Render(fmt.Sprintf("%s · %d/%d redes ok", fresh, m.gasOK, m.gasTotal))
+	return m.styles.Faint.Render(fmt.Sprintf("%s · %d/%d redes ok", fresh, m.gasOK, m.gasTotal)) +
+		m.rateLimitedSuffix()
+}
+
+// rateLimitedSuffix devuelve un indicador persistente de redes en cooldown por
+// rate-limit (2.9), o "" si no hay ninguna. Mientras dure el cooldown se ve en la
+// status bar, no solo como toast efímero.
+func (m Model) rateLimitedSuffix() string {
+	if m.client == nil {
+		return ""
+	}
+	if n := len(m.client.RateLimitedChains()); n > 0 {
+		return m.styles.Faint.Render(" · ") +
+			m.styles.NoticeError.Render(fmt.Sprintf("⚠ %d limitada(s)", n))
+	}
+	return ""
 }
 
 // statusRight compone la leyenda de atajos de la derecha. Cada atajo es un par
@@ -110,6 +126,9 @@ func (m Model) statusLeft() string {
 // `avail` (nunca a medias), y siempre se mantiene el sufijo global (ayuda/salir).
 // Los atajos que no quepan siguen documentados en el overlay de ayuda (?).
 func (m Model) statusRight(avail int) string {
+	if m.paletteOpen {
+		return m.styles.Faint.Render("↑↓ elegir · enter ejecutar · esc cerrar")
+	}
 	if m.helpOpen {
 		return m.styles.Faint.Render("? · esc cerrar")
 	}
@@ -143,14 +162,14 @@ func (m Model) statusRight(avail int) string {
 func (m Model) hintItems() []string {
 	switch m.active {
 	case tabAccounts:
-		return []string{"enter detalle", "ctrl+d borrar", "↑↓ mover"}
+		return []string{"enter detalle", "ctrl+d borrar", "ctrl+k paleta", "↑↓ mover"}
 	case tabBalances:
-		return []string{"y copiar", "o abrir", "s ordenar", "f filtrar", "e exportar", "r recargar", "n redes", "↑↓ mover"}
+		return []string{"y copiar", "o abrir", "s ordenar", "f filtrar", "e exportar", "r recargar", "ctrl+k paleta", "n redes", "↑↓ mover"}
 	case tabTransactions:
 		if m.txDetailOpen {
 			return []string{"↑↓ desplazar", "esc cerrar"}
 		}
-		return []string{"enter detalle", "y copiar", "o abrir", "s ordenar", "f filtrar red", "m cargar más", "e exportar", "r recargar", "n redes", "↑↓ mover"}
+		return []string{"enter detalle", "y copiar", "o abrir", "s ordenar", "f filtrar red", "m cargar más", "e exportar", "r recargar", "ctrl+k paleta", "n redes", "↑↓ mover"}
 	}
 	return nil
 }
@@ -158,6 +177,12 @@ func (m Model) hintItems() []string {
 // renderContent dibuja el cuerpo de la pestaña activa, recortado y rellenado al
 // área de contenido exacta para que el frame mantenga su tamaño.
 func (m Model) renderContent() string {
+	if m.tourActive {
+		return m.renderTour()
+	}
+	if m.paletteOpen {
+		return m.renderPalette()
+	}
 	if m.helpOpen {
 		return m.renderHelp()
 	}
