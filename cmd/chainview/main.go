@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -13,30 +15,73 @@ import (
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/ui"
 )
 
+// Información de build, inyectable con -ldflags "-X main.version=...". Los nombres
+// coinciden con los que rellena goreleaser por defecto, así que no hace falta
+// configurar plantillas de ldflags a mano. En un `go install` sin ldflags se
+// recae en runtime/debug.ReadBuildInfo (ver versionString).
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
-	if err := run(); err != nil {
+	fs := flag.NewFlagSet("chainview", flag.ExitOnError)
+	showVersion := fs.Bool("version", false, "muestra la versión y sale")
+	debugFlag := fs.Bool("debug", false, "arranca con el overlay de métricas/debug visible")
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "chainview — monitor de wallets EVM en el terminal (watch-only).\n\n")
+		fmt.Fprintf(os.Stderr, "Uso:\n  chainview [opciones]\n\nOpciones:\n")
+		fs.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nEntorno:\n  CHAINVIEW_DEBUG=1   equivale a --debug\n  ETHERSCAN_API_KEY   usa Etherscan para el historial (opcional)\n")
+	}
+	// flag.ExitOnError ya gestiona -h/--help (imprime Usage y sale con código 0).
+	_ = fs.Parse(os.Args[1:])
+
+	if *showVersion {
+		fmt.Println(versionString())
+		return
+	}
+
+	// CHAINVIEW_DEBUG=1 tiene la misma fuerza que --debug (3.3).
+	debugMode := *debugFlag || os.Getenv("CHAINVIEW_DEBUG") == "1"
+
+	if err := run(debugMode); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
 
-// debugEnabled indica si arrancar con el overlay de métricas/debug visible (3.3),
-// vía la flag --debug o la variable de entorno CHAINVIEW_DEBUG=1.
-func debugEnabled() bool {
-	if os.Getenv("CHAINVIEW_DEBUG") == "1" {
-		return true
-	}
-	for _, a := range os.Args[1:] {
-		if a == "--debug" || a == "-debug" {
-			return true
+// versionString compone la línea de versión. Si el binario se construyó con
+// ldflags (goreleaser o `make build`) usa esos valores; si no (p. ej. `go
+// install`), recae en la información de build del módulo.
+func versionString() string {
+	v, c, d := version, commit, date
+	if v == "dev" {
+		if bi, ok := debug.ReadBuildInfo(); ok {
+			if bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+				v = bi.Main.Version
+			}
+			for _, s := range bi.Settings {
+				switch s.Key {
+				case "vcs.revision":
+					if c == "none" {
+						c = s.Value
+					}
+				case "vcs.time":
+					if d == "unknown" {
+						d = s.Value
+					}
+				}
+			}
 		}
 	}
-	return false
+	return fmt.Sprintf("chainview %s (commit %s, %s)", v, c, d)
 }
 
 // run monta las dependencias y arranca la TUI. Se separa de main para que los
 // defer (cerrar el cliente) se ejecuten siempre.
-func run() error {
+func run(debugMode bool) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -81,7 +126,7 @@ func run() error {
 	// El descubrimiento de tokens (1.2) usa siempre Blockscout (keyless), aunque el
 	// historial de txs vaya por Etherscan.
 	m := ui.NewModel(client, wallets, networks, refresh, txProvider, ens, prices, cfg.FiatCurrency, blockscout, cfg.Theme, prefs).
-		WithDebug(debugEnabled())
+		WithDebug(debugMode)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return err
 	}

@@ -2,6 +2,15 @@ BINARY := chainview
 BIN_DIR := bin
 PKG     := ./cmd/chainview
 
+# Información de build inyectada en el binario (la lee `chainview --version`).
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+DATE    := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS := -s -w \
+	-X main.version=$(VERSION) \
+	-X main.commit=$(COMMIT) \
+	-X main.date=$(DATE)
+
 .PHONY: setup run build test lint vet clean
 
 ## setup: descarga dependencias y herramientas
@@ -13,10 +22,10 @@ setup:
 run:
 	go run $(PKG)
 
-## build: compila el binario en bin/
+## build: compila el binario en bin/ con la info de versión
 build:
 	mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/$(BINARY) $(PKG)
+	go build -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/$(BINARY) $(PKG)
 
 ## test: ejecuta los tests con el detector de carreras
 test:
