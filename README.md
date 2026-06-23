@@ -10,6 +10,10 @@ tokens, valor en fiat, historial de transacciones y gas en tiempo real sobre
 Ethereum, Arbitrum, Base, Optimism, Polygon, Scroll y Linea (y cualquier red EVM
 que añadas) — **sin registrarte en ningún sitio ni configurar nada**.
 
+<p align="center">
+  <img src=".github/assets/demo.gif" alt="Demo de chainview: balances multi-red con valor en fiat, historial de transacciones y paleta de comandos" width="100%">
+</p>
+
 ## Características
 
 - **Balances multi-cuenta y multi-red** en una tabla, con refresco automático.
