@@ -64,7 +64,7 @@ func NewEtherscanProvider(apiKey string) *EtherscanProvider {
 // falta la API key (en vez de hacer una petición que fallaría).
 func (p *EtherscanProvider) RecentTxs(ctx context.Context, chainID uint64, addr common.Address, page, perPage int) ([]Tx, error) {
 	if p.apiKey == "" {
-		return nil, errors.New("falta la API key de Etherscan (config etherscan_api_key o variable ETHERSCAN_API_KEY)")
+		return nil, errors.New("missing Etherscan API key (config etherscan_api_key or ETHERSCAN_API_KEY variable)")
 	}
 
 	q := url.Values{}
@@ -81,18 +81,18 @@ func (p *EtherscanProvider) RecentTxs(ctx context.Context, chainID uint64, addr 
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.baseURL+"?"+q.Encode(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("construyendo petición a Etherscan: %w", err)
+		return nil, fmt.Errorf("building Etherscan request: %w", err)
 	}
 
 	resp, err := p.http.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("consultando Etherscan: %w", err)
+		return nil, fmt.Errorf("querying Etherscan: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("leyendo respuesta de Etherscan: %w", err)
+		return nil, fmt.Errorf("reading Etherscan response: %w", err)
 	}
 	return parseTxList(body, chainID)
 }
@@ -129,7 +129,7 @@ type etherscanTx struct {
 func parseTxList(body []byte, chainID uint64) ([]Tx, error) {
 	var resp etherscanResp
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("respuesta de Etherscan ilegible: %w", err)
+		return nil, fmt.Errorf("unreadable Etherscan response: %w", err)
 	}
 
 	if resp.Status != "1" {
@@ -143,12 +143,12 @@ func parseTxList(body []byte, chainID uint64) ([]Tx, error) {
 		if detail == "" {
 			detail = resp.Message
 		}
-		return nil, fmt.Errorf("error de Etherscan: %s", detail)
+		return nil, fmt.Errorf("error from Etherscan: %s", detail)
 	}
 
 	var raw []etherscanTx
 	if err := json.Unmarshal(resp.Result, &raw); err != nil {
-		return nil, fmt.Errorf("lista de txs ilegible: %w", err)
+		return nil, fmt.Errorf("unreadable tx list: %w", err)
 	}
 
 	txs := make([]Tx, 0, len(raw))

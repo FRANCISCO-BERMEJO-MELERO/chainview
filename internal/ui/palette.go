@@ -62,8 +62,8 @@ func (m Model) paletteCommands() []command {
 	for _, t := range orderedTabs {
 		t := t
 		cmds = append(cmds, command{
-			label: "Ir a " + t.title(),
-			hint:  "pestaña",
+			label: "Go to " + t.title(),
+			hint:  "tab",
 			run: func(m Model) (Model, tea.Cmd) {
 				m.active = t
 				return m, m.onEnterTab()
@@ -76,7 +76,7 @@ func (m Model) paletteCommands() []command {
 		i, a := i, a
 		cmds = append(cmds, command{
 			label: "Wallet: " + m.displayName(a),
-			hint:  "ver detalle",
+			hint:  "view detail",
 			run: func(m Model) (Model, tea.Cmd) {
 				m.accCursor = i
 				m.active = tabAccounts
@@ -96,16 +96,16 @@ func (m Model) paletteCommands() []command {
 	}
 	for _, n := range m.allNetworks {
 		n := n
-		state := "activar"
+		state := "enable"
 		if active[n.ChainID] {
-			state = "desactivar"
+			state = "disable"
 		}
 		cmds = append(cmds, command{
-			label: "Red: " + n.Name + " (" + state + ")",
-			hint:  "redes",
+			label: "Network: " + n.Name + " (" + state + ")",
+			hint:  "networks",
 			run: func(m Model) (Model, tea.Cmd) {
 				if !m.toggleNetwork(n.ChainID) {
-					m.setNotice(noticeError, "Debe quedar al menos una red activa")
+					m.setNotice(noticeError, "At least one network must stay active")
 					return m, noticeClearCmd(m.noticeUntil)
 				}
 				return m, m.onNetworksChanged()
@@ -116,16 +116,16 @@ func (m Model) paletteCommands() []command {
 	// Acciones.
 	cmds = append(cmds,
 		command{
-			label: "Tema: alternar claro/oscuro",
-			hint:  "acción",
+			label: "Theme: toggle light/dark",
+			hint:  "action",
 			run: func(m Model) (Model, tea.Cmd) {
 				m.cycleTheme()
 				return m, nil
 			},
 		},
 		command{
-			label: "Recargar balances",
-			hint:  "acción",
+			label: "Reload balances",
+			hint:  "action",
 			run: func(m Model) (Model, tea.Cmd) {
 				if m.wallets.Len() == 0 {
 					return m, nil
@@ -205,14 +205,14 @@ func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // comandos casados, centrado en el área de contenido.
 func (m Model) renderPalette() string {
 	var b strings.Builder
-	b.WriteString(m.styles.StateTitle.Render("⌘  Paleta de comandos"))
+	b.WriteString(m.styles.StateTitle.Render("⌘  Command palette"))
 	b.WriteString("\n\n")
 	b.WriteString(m.paletteInput.View())
 	b.WriteString("\n")
 
 	cmds := m.filteredCommands()
 	if len(cmds) == 0 {
-		b.WriteString("\n" + m.styles.Faint.Render("Sin coincidencias"))
+		b.WriteString("\n" + m.styles.Faint.Render("No matches"))
 	}
 
 	// Mostramos hasta 'maxVisible' comandos alrededor del cursor.
@@ -235,7 +235,7 @@ func (m Model) renderPalette() string {
 		}
 	}
 	if len(cmds) > end {
-		b.WriteString("\n" + m.styles.Faint.Render(fmt.Sprintf("  … %d más", len(cmds)-end)))
+		b.WriteString("\n" + m.styles.Faint.Render(fmt.Sprintf("  … %d more", len(cmds)-end)))
 	}
 
 	panel := m.styles.Panel.Render(strings.TrimRight(b.String(), "\n"))

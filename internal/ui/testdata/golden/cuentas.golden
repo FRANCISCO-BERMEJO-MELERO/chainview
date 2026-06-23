@@ -1,11 +1,11 @@
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ CHAINVIEW                                                  ⛽ gas: cargando… │
+│ CHAINVIEW                                                   ⛽ gas: loading… │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   Cuentas    Balances    Transacciones                                       │
+│   Accounts    Balances    Transactions                                       │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >                                                                            │
 │                                                                              │
-│ Sin wallets — escribe una address (0x…) o un nombre ENS y pulsa Enter.       │
+│ No wallets — type an address (0x…) or ENS name and press Enter.              │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -20,5 +20,5 @@
 │                                                                              │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ ⟳ cargando…           enter detalle · ctrl+d borrar · ? ayuda · ctrl+c salir │
+│ ⟳ loading…               enter detail · ctrl+d delete · ? help · ctrl+c quit │
 ╰──────────────────────────────────────────────────────────────────────────────╯

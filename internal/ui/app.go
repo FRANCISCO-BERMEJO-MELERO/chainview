@@ -41,11 +41,11 @@ var orderedTabs = []tab{tabAccounts, tabBalances, tabTransactions}
 func (t tab) title() string {
 	switch t {
 	case tabAccounts:
-		return "Cuentas"
+		return "Accounts"
 	case tabBalances:
 		return "Balances"
 	case tabTransactions:
-		return "Transacciones"
+		return "Transactions"
 	default:
 		return ""
 	}
@@ -224,7 +224,7 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 	)
 
 	ti := textinput.New()
-	ti.Placeholder = "0x… address o nombre ENS (vitalik.eth), luego Enter"
+	ti.Placeholder = "0x… address or ENS name (vitalik.eth), then Enter"
 	ti.Prompt = "› "
 	// Holgura sobre los 42 chars de una address para que un pegado con espacios
 	// alrededor no se trunque; el TrimSpace + validación al añadir lo sanean.
@@ -239,7 +239,7 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 
 	// Input de la paleta de comandos (2.2).
 	pi := textinput.New()
-	pi.Placeholder = "Buscar comando…"
+	pi.Placeholder = "Search command…"
 	pi.Prompt = "› "
 	pi.CharLimit = 48
 
@@ -434,7 +434,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		ctx, gen := m.nextLoad()
 		cmds := []tea.Cmd{m.fetchPricesCmd(ctx, gen)}
 		if n := countBalanceErrors(msg.results); n > 0 {
-			m.setNotice(noticeError, fmt.Sprintf("⚠ %d balance(s) no se cargaron", n))
+			m.setNotice(noticeError, fmt.Sprintf("⚠ %d balance(s) failed to load", n))
 			cmds = append(cmds, noticeClearCmd(m.noticeUntil))
 		}
 		return m, tea.Batch(cmds...)
@@ -482,7 +482,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.txErr = nil
 		if firstErr != nil {
-			m.setNotice(noticeError, "⚠ algunas redes fallaron al cargar txs")
+			m.setNotice(noticeError, "⚠ some networks failed to load txs")
 			return m, noticeClearCmd(m.noticeUntil)
 		}
 		return m, nil
@@ -490,25 +490,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case exportDoneMsg:
 		switch {
 		case msg.err != nil:
-			m.setNotice(noticeError, "No se pudo exportar: "+msg.err.Error())
+			m.setNotice(noticeError, "Export failed: "+msg.err.Error())
 		case msg.count == 0:
-			m.setNotice(noticeInfo, "Nada que exportar")
+			m.setNotice(noticeInfo, "Nothing to export")
 		default:
-			m.setNotice(noticeInfo, fmt.Sprintf("✓ %d filas exportadas a %s", msg.count, msg.path))
+			m.setNotice(noticeInfo, fmt.Sprintf("✓ %d rows exported to %s", msg.count, msg.path))
 		}
 		return m, noticeClearCmd(m.noticeUntil)
 
 	case copiedMsg:
 		if msg.err != nil {
-			m.setNotice(noticeError, "No se pudo copiar: "+msg.err.Error())
+			m.setNotice(noticeError, "Copy failed: "+msg.err.Error())
 		} else {
-			m.setNotice(noticeInfo, "✓ "+msg.label+" copiado al portapapeles")
+			m.setNotice(noticeInfo, "✓ "+msg.label+" copied to clipboard")
 		}
 		return m, noticeClearCmd(m.noticeUntil)
 
 	case openedMsg:
 		if msg.err != nil {
-			m.setNotice(noticeError, "No se pudo abrir el navegador: "+msg.err.Error())
+			m.setNotice(noticeError, "Could not open browser: "+msg.err.Error())
 			return m, noticeClearCmd(m.noticeUntil)
 		}
 		return m, nil
@@ -541,7 +541,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ensAddMsg:
 		m.resolvingName = ""
 		if !msg.ok {
-			m.addErr = fmt.Errorf("no se pudo resolver %q en ENS", msg.name)
+			m.addErr = fmt.Errorf("could not resolve %q via ENS", msg.name)
 			return m, nil
 		}
 		if err := m.wallets.Add(msg.addr.Hex()); err != nil {
@@ -574,7 +574,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.gasOK, m.gasTotal = ok, len(msg.results)
 		m.lastGas = time.Now()
 		if rl := m.client.RateLimitedChains(); len(rl) > 0 {
-			m.setNotice(noticeError, fmt.Sprintf("⚠ %d red(es) rate-limited · sirviendo caché", len(rl)))
+			m.setNotice(noticeError, fmt.Sprintf("⚠ %d network(s) rate-limited · serving cache", len(rl)))
 			return m, noticeClearCmd(m.noticeUntil)
 		}
 		return m, nil

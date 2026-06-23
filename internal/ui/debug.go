@@ -12,7 +12,7 @@ import (
 // con ctrl+g (o arranca abierto con --debug).
 func (m Model) renderDebug() string {
 	var b strings.Builder
-	b.WriteString(m.styles.StateTitle.Render("⚙  Debug / métricas"))
+	b.WriteString(m.styles.StateTitle.Render("⚙  Debug / metrics"))
 	b.WriteString("\n")
 
 	row := func(k, v string) {
@@ -22,7 +22,7 @@ func (m Model) renderDebug() string {
 		b.WriteString("\n" + m.styles.Balance.Render(title) + "\n")
 	}
 
-	section("Caché RPC")
+	section("RPC cache")
 	if m.client != nil {
 		s := m.client.Stats()
 		total := s.CacheHits + s.RPCCalls
@@ -30,25 +30,25 @@ func (m Model) renderDebug() string {
 		if total > 0 {
 			ratio = fmt.Sprintf("%.0f%%", float64(s.CacheHits)*100/float64(total))
 		}
-		row("Llamadas RPC", fmt.Sprintf("%d", s.RPCCalls))
-		row("Hits de caché", fmt.Sprintf("%d  (%s)", s.CacheHits, ratio))
+		row("RPC calls", fmt.Sprintf("%d", s.RPCCalls))
+		row("Cache hits", fmt.Sprintf("%d  (%s)", s.CacheHits, ratio))
 		row("429 rate-limit", fmt.Sprintf("%d", s.RateLimitHits))
-		row("Valores viejos", fmt.Sprintf("%d", s.StaleServed))
+		row("Stale served", fmt.Sprintf("%d", s.StaleServed))
 		if rl := m.client.RateLimitedChains(); len(rl) > 0 {
-			row("Redes en cooldown", fmt.Sprintf("%v", rl))
+			row("Networks in cooldown", fmt.Sprintf("%v", rl))
 		}
 	} else {
-		row("(sin cliente)", "—")
+		row("(no client)", "—")
 	}
 
-	section("Sesión")
-	row("Redes activas", fmt.Sprintf("%d / %d", len(m.networks), len(m.allNetworks)))
+	section("Session")
+	row("Active networks", fmt.Sprintf("%d / %d", len(m.networks), len(m.allNetworks)))
 	row("Wallets", fmt.Sprintf("%d", m.wallets.Len()))
-	row("Generación carga", fmt.Sprintf("%d", m.loadGen))
-	row("Tema", m.themeNow)
-	row("Terminal", fmt.Sprintf("%d×%d  (contenido %d×%d)", m.width, m.height, m.contentW, m.contentH))
+	row("Load generation", fmt.Sprintf("%d", m.loadGen))
+	row("Theme", m.themeNow)
+	row("Terminal", fmt.Sprintf("%d×%d  (content %d×%d)", m.width, m.height, m.contentW, m.contentH))
 
-	b.WriteString(m.styles.Faint.Render("ctrl+g o esc para cerrar"))
+	b.WriteString(m.styles.Faint.Render("ctrl+g or esc to close"))
 
 	panel := m.styles.Panel.Render(strings.TrimRight(b.String(), "\n"))
 	// Clamp por si el panel no cabe en terminales bajos (no debe desbordar el frame).

@@ -35,7 +35,7 @@ func cooldownDuration() time.Duration {
 
 // errRateLimited indica que la red está rate-limited y no hay valor cacheado que
 // servir.
-var errRateLimited = errors.New("red rate-limited; reintenta en unos segundos")
+var errRateLimited = errors.New("network rate-limited; retry in a few seconds")
 
 // rpcEntry es un valor cacheado con su marca de tiempo.
 type rpcEntry struct {

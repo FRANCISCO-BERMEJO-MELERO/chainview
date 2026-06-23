@@ -124,7 +124,7 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			if url, ok := m.explorerAddressURL(row.chainID, addr); ok {
 				return m, openURLCmd(url)
 			}
-			m.setNotice(noticeInfo, "Esta red no tiene explorador configurado")
+			m.setNotice(noticeInfo, "This network has no explorer configured")
 			return m, noticeClearCmd(m.noticeUntil)
 		}
 	case "r":
@@ -150,7 +150,7 @@ func (m Model) selectedBalRow() (balRow, bool) {
 // la wallet (fila nativa) o la del contrato del token (fila de token).
 func balCopyTarget(row balRow) (value, label string) {
 	if row.token != nil {
-		return row.token.Token.Hex(), "address del token"
+		return row.token.Token.Hex(), "token address"
 	}
 	return row.address.Hex(), "address"
 }
@@ -264,9 +264,9 @@ func (m Model) sortBalances(vis []chain.BalanceResult) {
 func balSortName(key int) string {
 	switch key {
 	case 1:
-		return "valor"
+		return "value"
 	case 2:
-		return "red"
+		return "network"
 	case 3:
 		return "wallet"
 	}
@@ -279,11 +279,11 @@ func balSortName(key int) string {
 func balanceColumns() []column {
 	return []column{
 		{title: "Wallet", align: alignLeft, min: 16},
-		{title: "Red", align: alignLeft, min: 12},
+		{title: "Network", align: alignLeft, min: 12},
 		{title: "", align: alignLeft, min: 1, flex: true}, // espaciador
 		{title: "Balance", align: alignRight, min: 12},
 		{title: "", align: alignLeft, min: 5},        // símbolo
-		{title: "Valor", align: alignRight, min: 12}, // valor fiat (1.1)
+		{title: "Value", align: alignRight, min: 12}, // valor fiat (1.1)
 	}
 }
 
@@ -343,11 +343,11 @@ func (m Model) visibleFiatTotal(vis []chain.BalanceResult) (float64, bool) {
 
 func (m Model) renderBalances() string {
 	if m.wallets.Len() == 0 {
-		return m.renderState("◯", "Sin wallets", "Añádelas en la pestaña Cuentas para ver balances")
+		return m.renderState("◯", "No wallets", "Add some in the Accounts tab to see balances")
 	}
 	// Primera carga sin datos previos: estado de carga centrado.
 	if m.balState == stateLoading && len(m.balResults) == 0 {
-		return m.renderState(m.spinner.View(), "Cargando balances…", "")
+		return m.renderState(m.spinner.View(), "Loading balances…", "")
 	}
 
 	cols := balanceColumns()
@@ -355,19 +355,19 @@ func (m Model) renderBalances() string {
 	vis := m.visibleBalances()
 
 	// Contexto: modo de vista (todas / wallet seleccionada).
-	scope := "todas las wallets"
+	scope := "all wallets"
 	if m.balFocus {
 		if w, ok := m.selectedWallet(); ok {
 			scope = m.displayName(w)
 		}
 	}
-	ctx := m.styles.Balance.Render("Saldos") + m.styles.Faint.Render(" · "+scope)
+	ctx := m.styles.Balance.Render("Balances") + m.styles.Faint.Render(" · "+scope)
 	if name := balSortName(m.balSortKey); name != "" {
 		arrow := "↓"
 		if m.balSortAsc {
 			arrow = "↑"
 		}
-		ctx += m.styles.Faint.Render(" · orden: " + name + " " + arrow)
+		ctx += m.styles.Faint.Render(" · sort: " + name + " " + arrow)
 	}
 	if m.balState == stateLoading {
 		ctx += m.styles.Faint.Render("  " + m.spinner.View())

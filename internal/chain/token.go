@@ -148,7 +148,7 @@ func callSymbol(ctx context.Context, caller contractCaller, token common.Address
 	// Fallback bytes32: descartamos los \x00 de relleno.
 	s := strings.TrimRight(string(out), "\x00")
 	if s == "" {
-		return "", fmt.Errorf("symbol() ilegible para %s", token.Hex())
+		return "", fmt.Errorf("unreadable symbol() for %s", token.Hex())
 	}
 	return strings.TrimSpace(s), nil
 }

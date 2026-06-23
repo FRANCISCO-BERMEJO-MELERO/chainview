@@ -68,7 +68,7 @@ func NewBlockscoutProvider(networks []Network) *BlockscoutProvider {
 func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr common.Address, page, perPage int) ([]Tx, error) {
 	base, ok := p.hosts[chainID]
 	if !ok {
-		return nil, fmt.Errorf("red no soportada por Blockscout (chain id %d)", chainID)
+		return nil, fmt.Errorf("network not supported by Blockscout (chain id %d)", chainID)
 	}
 
 	q := url.Values{}
@@ -81,18 +81,18 @@ func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"?"+q.Encode(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("construyendo petición a Blockscout: %w", err)
+		return nil, fmt.Errorf("building Blockscout request: %w", err)
 	}
 
 	resp, err := p.http.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("consultando Blockscout: %w", err)
+		return nil, fmt.Errorf("querying Blockscout: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("leyendo respuesta de Blockscout: %w", err)
+		return nil, fmt.Errorf("reading Blockscout response: %w", err)
 	}
 	return parseTxList(body, chainID)
 }
@@ -104,7 +104,7 @@ func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr
 func (p *BlockscoutProvider) TokenBalances(ctx context.Context, chainID uint64, addr common.Address) ([]TokenBalance, error) {
 	base, ok := p.hosts[chainID]
 	if !ok {
-		return nil, fmt.Errorf("red no soportada por Blockscout (chain id %d)", chainID)
+		return nil, fmt.Errorf("network not supported by Blockscout (chain id %d)", chainID)
 	}
 
 	key := fmt.Sprintf("%d:%s", chainID, addr.Hex())
@@ -122,17 +122,17 @@ func (p *BlockscoutProvider) TokenBalances(ctx context.Context, chainID uint64, 
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"?"+q.Encode(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("construyendo petición a Blockscout: %w", err)
+		return nil, fmt.Errorf("building Blockscout request: %w", err)
 	}
 	resp, err := p.http.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("consultando Blockscout: %w", err)
+		return nil, fmt.Errorf("querying Blockscout: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("leyendo respuesta de Blockscout: %w", err)
+		return nil, fmt.Errorf("reading Blockscout response: %w", err)
 	}
 	tokens, err := parseTokenList(body)
 	if err != nil {
@@ -161,7 +161,7 @@ type blockscoutToken struct {
 func parseTokenList(body []byte) ([]TokenBalance, error) {
 	var resp etherscanResp
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("respuesta de Blockscout ilegible: %w", err)
+		return nil, fmt.Errorf("unreadable Blockscout response: %w", err)
 	}
 	if resp.Status != "1" {
 		// status "0" con result vacío = la wallet no tiene tokens (no es error).
@@ -170,7 +170,7 @@ func parseTokenList(body []byte) ([]TokenBalance, error) {
 
 	var raw []blockscoutToken
 	if err := json.Unmarshal(resp.Result, &raw); err != nil {
-		return nil, fmt.Errorf("lista de tokens ilegible: %w", err)
+		return nil, fmt.Errorf("unreadable token list: %w", err)
 	}
 
 	out := make([]TokenBalance, 0, len(raw))

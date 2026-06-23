@@ -22,39 +22,39 @@ type keyGroup struct {
 func keyGroups() []keyGroup {
 	return []keyGroup{
 		{"Global", []keyHelp{
-			{"tab / shift+tab", "cambiar de pestaña"},
-			{"ctrl+k", "paleta de comandos (buscar/ir/acciones)"},
-			{"ctrl+g", "métricas / modo debug"},
-			{"n", "elegir redes visibles"},
-			{"?", "abrir/cerrar esta ayuda"},
-			{"q", "salir"},
-			{"ctrl+c", "salir"},
+			{"tab / shift+tab", "switch tab"},
+			{"ctrl+k", "command palette (search/go/actions)"},
+			{"ctrl+g", "metrics / debug mode"},
+			{"n", "choose visible networks"},
+			{"?", "toggle this help"},
+			{"q", "quit"},
+			{"ctrl+c", "quit"},
 		}},
-		{"Cuentas", []keyHelp{
-			{"enter", "ver el detalle de la wallet (o añadir si escribes)"},
-			{"ctrl+d", "borrar la wallet seleccionada (confirma con ctrl+d)"},
-			{"↑ ↓", "moverse por la lista"},
+		{"Accounts", []keyHelp{
+			{"enter", "view wallet detail (or add if typing)"},
+			{"ctrl+d", "delete selected wallet (confirm with ctrl+d)"},
+			{"↑ ↓", "move through the list"},
 		}},
 		{"Balances", []keyHelp{
-			{"↑ ↓", "moverse por la tabla"},
-			{"f", "alternar todas / la wallet seleccionada"},
-			{"s / S", "ordenar columna / invertir"},
-			{"y", "copiar la address al portapapeles"},
-			{"o", "abrir en el explorador de bloques"},
-			{"e", "exportar saldos a CSV"},
-			{"r", "recargar balances"},
+			{"↑ ↓", "move through the table"},
+			{"f", "toggle all / selected wallet"},
+			{"s / S", "sort column / reverse"},
+			{"y", "copy address to clipboard"},
+			{"o", "open in block explorer"},
+			{"e", "export balances to CSV"},
+			{"r", "reload balances"},
 		}},
-		{"Transacciones", []keyHelp{
-			{"↑ ↓", "moverse por la lista"},
-			{"enter", "ver el detalle de la tx"},
-			{"esc", "cerrar el detalle"},
-			{"f", "filtrar por red (cicla)"},
-			{"s / S", "ordenar columna / invertir"},
-			{"m", "cargar más (página siguiente)"},
-			{"y", "copiar el hash al portapapeles"},
-			{"o", "abrir la tx en el explorador"},
-			{"e", "exportar transacciones a CSV"},
-			{"r", "recargar historial"},
+		{"Transactions", []keyHelp{
+			{"↑ ↓", "move through the list"},
+			{"enter", "view tx detail"},
+			{"esc", "close detail"},
+			{"f", "filter by network (cycle)"},
+			{"s / S", "sort column / reverse"},
+			{"m", "load more (next page)"},
+			{"y", "copy hash to clipboard"},
+			{"o", "open tx in explorer"},
+			{"e", "export transactions to CSV"},
+			{"r", "reload history"},
 		}},
 	}
 }
@@ -62,7 +62,7 @@ func keyGroups() []keyGroup {
 // renderHelp dibuja el overlay de ayuda centrado en el área de contenido.
 func (m Model) renderHelp() string {
 	var b strings.Builder
-	b.WriteString(m.styles.StateTitle.Render("⌨  Atajos de teclado"))
+	b.WriteString(m.styles.StateTitle.Render("⌨  Keyboard shortcuts"))
 	b.WriteString("\n")
 
 	for _, g := range keyGroups() {

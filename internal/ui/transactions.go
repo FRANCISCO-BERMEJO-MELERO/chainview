@@ -117,11 +117,11 @@ func (m Model) sortTxs(rows []txRow) {
 func txSortName(key int) string {
 	switch key {
 	case 1:
-		return "red"
+		return "network"
 	case 2:
-		return "valor"
+		return "value"
 	}
-	return "fecha"
+	return "date"
 }
 
 // fetchTxPagesCmd pide en paralelo las páginas indicadas (una goroutine por red),
@@ -365,7 +365,7 @@ func (m Model) updateTransactions(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			if url, ok := m.explorerTxURL(tx.ChainID, tx.Hash); ok {
 				return m, openURLCmd(url)
 			}
-			m.setNotice(noticeInfo, "Esta red no tiene explorador configurado")
+			m.setNotice(noticeInfo, "This network has no explorer configured")
 			return m, noticeClearCmd(m.noticeUntil)
 		}
 	case "enter":
@@ -425,7 +425,7 @@ func (m Model) txDetailContent(row txRow) string {
 
 	status := "ok"
 	if !tx.Success {
-		status = "fallida"
+		status = "failed"
 	}
 
 	label := func(s string) string { return m.styles.Faint.Render(fit(s, 12)) }
@@ -453,24 +453,24 @@ func (m Model) txDetailContent(row txRow) string {
 	}
 
 	lines := []string{
-		label("Red") + m.networkBadge(tx.ChainID) + m.styles.Faint.Render(fmt.Sprintf("  %s (chain %d)", m.networkName(tx.ChainID), tx.ChainID)),
-		label("Tipo") + tagText,
+		label("Network") + m.networkBadge(tx.ChainID) + m.styles.Faint.Render(fmt.Sprintf("  %s (chain %d)", m.networkName(tx.ChainID), tx.ChainID)),
+		label("Type") + tagText,
 		field("Hash", tx.Hash),
-		label("Estado") + status,
-		label("Bloque") + fmt.Sprintf("%d", tx.BlockNumber),
-		label("Fecha") + tx.Timestamp.Format("2006-01-02 15:04:05") + "  (" + humanizeSince(tx.Timestamp) + ")",
+		label("Status") + status,
+		label("Block") + fmt.Sprintf("%d", tx.BlockNumber),
+		label("Date") + tx.Timestamp.Format("2006-01-02 15:04:05") + "  (" + humanizeSince(tx.Timestamp) + ")",
 		"",
-		field("De", addr(tx.From)),
-		field("A", addr(tx.To)),
-		label("Valor") + chain.FormatEther(tx.Value) + " " + sym,
-		field("Acción", row.detail),
+		field("From", addr(tx.From)),
+		field("To", addr(tx.To)),
+		label("Value") + chain.FormatEther(tx.Value) + " " + sym,
+		field("Action", row.detail),
 	}
 	if len(tx.Input) >= 4 {
 		lines = append(lines, label("Selector")+"0x"+common.Bytes2Hex(tx.Input[:4]))
 	}
 	lines = append(lines,
 		"",
-		label("Gas usado")+fmt.Sprintf("%d", tx.GasUsed),
+		label("Gas used")+fmt.Sprintf("%d", tx.GasUsed),
 		label("Gas price")+chain.FormatUnits(tx.GasPrice, 9)+" gwei",
 		label("Nonce")+fmt.Sprintf("%d", tx.Nonce),
 	)
@@ -525,16 +525,16 @@ func (m Model) renderTransactions() string {
 	}
 
 	if m.wallets.Len() == 0 {
-		return m.renderState("◯", "Sin wallets", "Añádelas en la pestaña Cuentas para ver sus transacciones")
+		return m.renderState("◯", "No wallets", "Add some in the Accounts tab to see their transactions")
 	}
 
 	switch {
 	case m.txState == stateLoading && len(m.txs) == 0:
-		return m.renderState(m.spinner.View(), "Cargando transacciones…", "")
+		return m.renderState(m.spinner.View(), "Loading transactions…", "")
 	case m.txState == stateError:
-		return m.renderState("⚠", "No se pudo cargar el historial", chain.DescribeNetErr(m.txErr)+" — pulsa r para reintentar")
+		return m.renderState("⚠", "Could not load history", chain.DescribeNetErr(m.txErr)+" — press r to retry")
 	case m.txState == stateLoaded && len(m.txs) == 0:
-		return m.renderState("◯", "Sin transacciones", "para "+m.displayName(m.txWallet))
+		return m.renderState("◯", "No transactions", "for "+m.displayName(m.txWallet))
 	}
 
 	vis := m.visibleTxs()
@@ -543,7 +543,7 @@ func (m Model) renderTransactions() string {
 
 	// Contexto: wallet en primer plano + filtro de red + nº de txs (+ spinner si
 	// estamos cargando más).
-	filterLabel := "todas las redes"
+	filterLabel := "all networks"
 	if m.txNetFilter != 0 {
 		filterLabel = m.networkName(m.txNetFilter)
 	}
@@ -552,7 +552,7 @@ func (m Model) renderTransactions() string {
 		arrow = "↑"
 	}
 	ctx := m.styles.Balance.Render(m.displayName(m.txWallet)) +
-		m.styles.Faint.Render(" · "+filterLabel+" · "+fmt.Sprintf("%d txs", len(vis))+" · orden: "+txSortName(m.txSortKey)+" "+arrow)
+		m.styles.Faint.Render(" · "+filterLabel+" · "+fmt.Sprintf("%d txs", len(vis))+" · sort: "+txSortName(m.txSortKey)+" "+arrow)
 	if m.txState == stateLoading {
 		ctx += m.styles.Faint.Render("  " + m.spinner.View())
 	}
@@ -597,22 +597,22 @@ func (m Model) renderTransactions() string {
 func (m Model) txListFooter() string {
 	for _, id := range m.activeTxChains() {
 		if !m.txExhausted[id] {
-			return m.styles.Faint.Render("↓ más abajo · m carga más")
+			return m.styles.Faint.Render("↓ more below · m load more")
 		}
 	}
-	return m.styles.Faint.Render("— fin del historial —")
+	return m.styles.Faint.Render("— end of history —")
 }
 
 // txColumns define las columnas de la tabla de transacciones. La descripción es
 // la columna flex (absorbe el ancho sobrante); el momento se alinea a la derecha.
 func txColumns() []column {
 	return []column{
-		{title: "Red", align: alignLeft, min: 5},
+		{title: "Network", align: alignLeft, min: 5},
 		{title: "Tx", align: alignLeft, min: 11},
-		{title: "Tipo", align: alignLeft, min: 7},
-		{title: "Detalle", align: alignLeft, min: 16, flex: true},
-		{title: "Cuándo", align: alignRight, min: 8},
-		{title: "Est", align: alignLeft, min: 3},
+		{title: "Type", align: alignLeft, min: 7},
+		{title: "Detail", align: alignLeft, min: 16, flex: true},
+		{title: "When", align: alignRight, min: 8},
+		{title: "St", align: alignLeft, min: 3},
 	}
 }
 
@@ -630,12 +630,12 @@ func humanizeSince(t time.Time) string {
 	d := time.Since(t)
 	switch {
 	case d < time.Minute:
-		return "ahora"
+		return "now"
 	case d < time.Hour:
-		return fmt.Sprintf("hace %dm", int(d.Minutes()))
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
 	case d < 24*time.Hour:
-		return fmt.Sprintf("hace %dh", int(d.Hours()))
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
 	default:
-		return fmt.Sprintf("hace %dd", int(d.Hours()/24))
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
 	}
 }

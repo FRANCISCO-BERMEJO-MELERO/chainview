@@ -27,12 +27,12 @@ func (m Model) renderWelcome() string {
 	}
 	logo = m.styles.Brand.Render(logo)
 
-	tagline := m.styles.Balance.Render("Monitor watch-only de wallets EVM, en tu terminal")
+	tagline := m.styles.Balance.Render("Watch-only EVM wallet monitor, in your terminal")
 
 	intro := m.styles.Faint.Render(strings.Join([]string{
-		"Sigue balances en Ethereum, Arbitrum, Base, Optimism y más,",
-		"con historial de transacciones y el gas en tiempo real.",
-		"Solo lectura: nunca pide claves privadas ni firma nada.",
+		"Track balances on Ethereum, Arbitrum, Base, Optimism and more,",
+		"with transaction history and live gas.",
+		"Read-only: never asks for private keys nor signs anything.",
 	}, "\n"))
 
 	commands := m.welcomeCommands()
@@ -68,10 +68,10 @@ func (m Model) renderWelcome() string {
 // acción), separados por puntos.
 func (m Model) welcomeCommands() string {
 	cmds := []struct{ key, desc string }{
-		{"tab", "cambiar"},
-		{"enter", "añadir"},
-		{"r", "recargar"},
-		{"?", "atajos"},
+		{"tab", "switch"},
+		{"enter", "add"},
+		{"r", "reload"},
+		{"?", "shortcuts"},
 	}
 	parts := make([]string, len(cmds))
 	for i, c := range cmds {
@@ -87,7 +87,7 @@ func (m Model) welcomeFooter() string {
 	if m.welcomeHide {
 		check = m.styles.Balance.Render("[x]")
 	}
-	return m.styles.TableHeader.Render("enter") + m.styles.Faint.Render(" empezar    ") +
-		m.styles.Brand.Render("d") + " " + check + m.styles.Faint.Render(" no volver a mostrar    ") +
-		m.styles.TableHeader.Render("q") + m.styles.Faint.Render(" salir")
+	return m.styles.TableHeader.Render("enter") + m.styles.Faint.Render(" start    ") +
+		m.styles.Brand.Render("d") + " " + check + m.styles.Faint.Render(" don't show again    ") +
+		m.styles.TableHeader.Render("q") + m.styles.Faint.Render(" quit")
 }

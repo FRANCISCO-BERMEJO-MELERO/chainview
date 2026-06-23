@@ -76,8 +76,8 @@ func TestDriverHelpAndDebugOverlays(t *testing.T) {
 	if !d.m.helpOpen {
 		t.Fatal("? debería abrir la ayuda")
 	}
-	if !strings.Contains(d.frame(), "ayuda") {
-		t.Errorf("el frame de ayuda no contiene 'ayuda':\n%s", d.frame())
+	if !strings.Contains(d.frame(), "help") {
+		t.Errorf("el frame de ayuda no contiene 'help':\n%s", d.frame())
 	}
 	d.key("esc")
 	if d.m.helpOpen {

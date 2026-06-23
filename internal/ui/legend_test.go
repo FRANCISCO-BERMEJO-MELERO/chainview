@@ -16,12 +16,12 @@ func TestStatusRightFitsWidth(t *testing.T) {
 	// A cualquier ancho razonable, la leyenda no debe exceder el disponible.
 	for _, avail := range []int{20, 40, 60, 100} {
 		got := m.statusRight(avail)
-		if w := lipgloss.Width(got); w > avail && avail >= lipgloss.Width("? ayuda · q salir") {
+		if w := lipgloss.Width(got); w > avail && avail >= lipgloss.Width("? help · q quit") {
 			t.Errorf("avail=%d: leyenda ancho %d desborda", avail, w)
 		}
 		// Siempre incluye el acceso a la ayuda.
-		if !strings.Contains(got, "? ayuda") {
-			t.Errorf("avail=%d: falta '? ayuda' en %q", avail, got)
+		if !strings.Contains(got, "? help") {
+			t.Errorf("avail=%d: falta '? help' en %q", avail, got)
 		}
 	}
 }

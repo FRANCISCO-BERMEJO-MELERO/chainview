@@ -179,21 +179,21 @@ func (p *DefiLlamaPrices) fetchInto(ctx context.Context, missing map[string]stru
 	_, err, _ := p.sf.Do(sfKey, func() (interface{}, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.baseURL+sfKey, nil)
 		if err != nil {
-			return nil, fmt.Errorf("construyendo petición a DefiLlama: %w", err)
+			return nil, fmt.Errorf("building DefiLlama request: %w", err)
 		}
 		resp, err := p.http.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("consultando DefiLlama: %w", err)
+			return nil, fmt.Errorf("querying DefiLlama: %w", err)
 		}
 		defer func() { _ = resp.Body.Close() }()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("leyendo respuesta de DefiLlama: %w", err)
+			return nil, fmt.Errorf("reading DefiLlama response: %w", err)
 		}
 		var parsed llamaResp
 		if err := json.Unmarshal(body, &parsed); err != nil {
-			return nil, fmt.Errorf("respuesta de DefiLlama ilegible: %w", err)
+			return nil, fmt.Errorf("unreadable DefiLlama response: %w", err)
 		}
 
 		now := time.Now()

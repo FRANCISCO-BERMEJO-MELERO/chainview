@@ -25,7 +25,7 @@ func (c *Client) balanceAtRaw(ctx context.Context, chainID uint64, addr common.A
 	// nil como número de bloque = último bloque (latest).
 	wei, err := conn.BalanceAt(ctx, addr, nil)
 	if err != nil {
-		return nil, fmt.Errorf("balance de %s en chain id %d: %w", addr.Hex(), chainID, err)
+		return nil, fmt.Errorf("balance of %s on chain id %d: %w", addr.Hex(), chainID, err)
 	}
 	return wei, nil
 }

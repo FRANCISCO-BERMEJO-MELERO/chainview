@@ -1,24 +1,24 @@
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ CHAINVIEW                                                  ⛽ gas: cargando… │
+│ CHAINVIEW                                                   ⛽ gas: loading… │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   Cuentas    Balances    Transacciones                                       │
+│   Accounts    Balances    Transactions                                       │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│              ╭────────────────────────────────────────────────╮              │
-│              │                                                │              │
-│              │  ⚙  Debug / métricas                           │              │
-│              │                                                │              │
-│              │  Caché RPC                                     │              │
-│              │    (sin cliente)     —                         │              │
-│              │                                                │              │
-│              │  Sesión                                        │              │
-│              │    Redes activas     7 / 0                     │              │
-│              │    Wallets           0                         │              │
-│              │    Generación carga  0                         │              │
-│              │    Tema                                        │              │
-│              │    Terminal          80×24  (contenido 76×16)  │              │
-│              │  ctrl+g o esc para cerrar                      │              │
-│              │                                                │              │
-│              ╰────────────────────────────────────────────────╯              │
+│               ╭──────────────────────────────────────────────╮               │
+│               │                                              │               │
+│               │  ⚙  Debug / metrics                          │               │
+│               │                                              │               │
+│               │  RPC cache                                   │               │
+│               │    (no client)       —                       │               │
+│               │                                              │               │
+│               │  Session                                     │               │
+│               │    Active networks   7 / 0                   │               │
+│               │    Wallets           0                       │               │
+│               │    Load generation   0                       │               │
+│               │    Theme                                     │               │
+│               │    Terminal          80×24  (content 76×16)  │               │
+│               │  ctrl+g or esc to close                      │               │
+│               │                                              │               │
+│               ╰──────────────────────────────────────────────╯               │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ ⟳ cargando…   y copiar · o abrir · s ordenar · f filtrar · ? ayuda · q salir │
+│ ⟳ loading…  y copy · o open · s sort · f filter · e export · ? help · q quit │
 ╰──────────────────────────────────────────────────────────────────────────────╯

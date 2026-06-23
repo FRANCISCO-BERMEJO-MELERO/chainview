@@ -68,7 +68,7 @@ func (m Model) updateNetworks(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		id := m.allNetworks[m.networksCursor].ChainID
 		if !m.toggleNetwork(id) {
-			m.setNotice(noticeError, "Debe quedar al menos una red activa")
+			m.setNotice(noticeError, "At least one network must stay active")
 			return m, noticeClearCmd(m.noticeUntil)
 		}
 		return m, m.onNetworksChanged()
@@ -153,7 +153,7 @@ func (m Model) renderNetworks() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(m.styles.StateTitle.Render("🌐  Redes"))
+	b.WriteString(m.styles.StateTitle.Render("🌐  Networks"))
 	b.WriteString("\n")
 
 	for i, n := range m.allNetworks {
@@ -176,7 +176,7 @@ func (m Model) renderNetworks() string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(m.styles.Faint.Render("espacio conmutar · esc cerrar"))
+	b.WriteString(m.styles.Faint.Render("space toggle · esc close"))
 
 	panel := m.styles.Panel.Render(strings.TrimRight(b.String(), "\n"))
 	return lipgloss.Place(m.contentW, m.contentH, lipgloss.Center, lipgloss.Center, panel)
