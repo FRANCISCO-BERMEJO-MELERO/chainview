@@ -61,7 +61,7 @@ const metaABIJSON = `[
 var metaABI = func() abi.ABI {
 	a, err := abi.JSON(strings.NewReader(metaABIJSON))
 	if err != nil {
-		panic("chain: ABI de metadatos inválida: " + err.Error())
+		panic("chain: invalid metadata ABI: " + err.Error())
 	}
 	return a
 }()

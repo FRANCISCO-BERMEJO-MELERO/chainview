@@ -52,7 +52,7 @@ const ensABIJSON = `[
 var ensABI = func() abi.ABI {
 	a, err := abi.JSON(strings.NewReader(ensABIJSON))
 	if err != nil {
-		panic("chain: ABI de ENS inválida: " + err.Error())
+		panic("chain: invalid ENS ABI: " + err.Error())
 	}
 	return a
 }()
