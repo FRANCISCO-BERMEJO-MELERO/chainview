@@ -37,15 +37,16 @@ func TestBar(t *testing.T) {
 
 func testModel(w, h int) Model {
 	m := Model{
-		styles:   DefaultStyles(),
-		wallets:  &storage.Wallets{},
-		networks: chain.DefaultNetworks(),
-		gas:      map[uint64]*big.Int{},
-		gasPrev:  map[uint64]*big.Int{},
-		ensNames: map[common.Address]string{},
-		input:    textinput.New(),
-		active:   tabBalances,
-		balState: stateLoaded,
+		styles:       DefaultStyles(),
+		wallets:      &storage.Wallets{},
+		networks:     chain.DefaultNetworks(),
+		gas:          map[uint64]*big.Int{},
+		gasPrev:      map[uint64]*big.Int{},
+		ensNames:     map[common.Address]string{},
+		input:        textinput.New(),
+		paletteInput: textinput.New(),
+		active:       tabBalances,
+		balState:     stateLoaded,
 	}
 	m.width, m.height = w, h
 	m.contentW, m.contentH = contentDims(w, h)
