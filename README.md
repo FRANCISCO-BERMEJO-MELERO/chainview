@@ -46,12 +46,17 @@ make run
 Lanza `chainview`. En la pestaña **Cuentas**, escribe una address (`0x…`) o un
 nombre ENS (`vitalik.eth`) y pulsa Enter. Cambia de pestaña con `tab`.
 
+Para diagnosticar, arranca con `chainview --debug` (o `CHAINVIEW_DEBUG=1`) o pulsa
+`ctrl+g` para ver métricas internas: llamadas RPC, aciertos de caché y
+rate-limits.
+
 ### Atajos
 
 | Tecla            | Acción                                          |
 | ---------------- | ----------------------------------------------- |
 | `tab` / `↹⇧`     | Cambiar de pestaña                              |
 | `ctrl+k`         | Paleta de comandos (buscar/ir/acciones)         |
+| `ctrl+g`         | Métricas / modo debug (RPCs, caché, rate-limits) |
 | `?`              | Mostrar/ocultar la ayuda                        |
 | `↑` `↓`          | Moverse por listas y tablas                     |
 | `enter`          | Añadir wallet / detalle de wallet o de tx       |
