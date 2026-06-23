@@ -432,18 +432,35 @@ func (m Model) txDetailContent(row txRow) string {
 		}
 		return a.Hex()
 	}
+	// field envuelve los valores largos (hash, address, acción) al ancho del modal
+	// con sangría colgante bajo la etiqueta, para que no desborden en terminales
+	// estrechos (2.6).
+	field := func(name, value string) string {
+		prefix := label(name)
+		avail := m.contentW - 12
+		if avail < 8 { // terminal muy estrecho: sin sangría, dejamos que el viewport recorte
+			return prefix + value
+		}
+		wrapped := lipgloss.NewStyle().Width(avail).Render(value)
+		parts := strings.Split(wrapped, "\n")
+		for i := 1; i < len(parts); i++ {
+			parts[i] = strings.Repeat(" ", 12) + parts[i]
+		}
+		return prefix + strings.Join(parts, "\n")
+	}
+
 	lines := []string{
 		label("Red") + m.networkBadge(tx.ChainID) + m.styles.Faint.Render(fmt.Sprintf("  %s (chain %d)", m.networkName(tx.ChainID), tx.ChainID)),
 		label("Tipo") + tagText,
-		label("Hash") + tx.Hash,
+		field("Hash", tx.Hash),
 		label("Estado") + status,
 		label("Bloque") + fmt.Sprintf("%d", tx.BlockNumber),
 		label("Fecha") + tx.Timestamp.Format("2006-01-02 15:04:05") + "  (" + humanizeSince(tx.Timestamp) + ")",
 		"",
-		label("De") + addr(tx.From),
-		label("A") + addr(tx.To),
+		field("De", addr(tx.From)),
+		field("A", addr(tx.To)),
 		label("Valor") + chain.FormatEther(tx.Value) + " " + sym,
-		label("Acción") + row.detail,
+		field("Acción", row.detail),
 	}
 	if len(tx.Input) >= 4 {
 		lines = append(lines, label("Selector")+"0x"+common.Bytes2Hex(tx.Input[:4]))

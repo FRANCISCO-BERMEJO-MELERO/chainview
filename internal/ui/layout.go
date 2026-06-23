@@ -143,7 +143,7 @@ func (m Model) statusRight(avail int) string {
 func (m Model) hintItems() []string {
 	switch m.active {
 	case tabAccounts:
-		return []string{"enter añadir", "ctrl+d borrar", "↑↓ mover"}
+		return []string{"enter detalle", "ctrl+d borrar", "↑↓ mover"}
 	case tabBalances:
 		return []string{"y copiar", "o abrir", "s ordenar", "f filtrar", "e exportar", "r recargar", "n redes", "↑↓ mover"}
 	case tabTransactions:

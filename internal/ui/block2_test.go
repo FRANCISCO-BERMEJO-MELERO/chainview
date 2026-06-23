@@ -5,10 +5,56 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/chain"
+	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/storage"
 )
+
+// keyMsg construye un KeyPressMsg para los tests del bloque 2.
+func keyMsg(s string) tea.KeyPressMsg {
+	switch s {
+	case "ctrl+d":
+		return tea.KeyPressMsg{Mod: tea.ModCtrl, Code: 'd'}
+	case "esc":
+		return tea.KeyPressMsg{Code: tea.KeyEscape}
+	default:
+		return tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
+	}
+}
+
+// --- 2.8 confirmación de borrado ---
+
+func TestConfirmDeleteRequiresTwoPresses(t *testing.T) {
+	if keyMsg("ctrl+d").String() != "ctrl+d" {
+		t.Fatalf("el helper de teclas no produce ctrl+d, got %q", keyMsg("ctrl+d").String())
+	}
+	ws := &storage.Wallets{}
+	_ = ws.Add("0x1111111111111111111111111111111111111111")
+	m := testModel(80, 24)
+	m.wallets = ws
+	m.active = tabAccounts
+
+	// Primer ctrl+d: arma la confirmación, no borra.
+	r1, _ := m.updateAccounts(keyMsg("ctrl+d"))
+	m1 := r1.(Model)
+	if !m1.confirmDel || m1.wallets.Len() != 1 {
+		t.Fatalf("primer ctrl+d: confirmDel=%v len=%d, esperaba true/1", m1.confirmDel, m1.wallets.Len())
+	}
+	// esc cancela.
+	r2, _ := m1.updateAccounts(keyMsg("esc"))
+	m2 := r2.(Model)
+	if m2.confirmDel || m2.wallets.Len() != 1 {
+		t.Fatalf("esc debería cancelar la confirmación sin borrar")
+	}
+	// Dos ctrl+d seguidos: borra.
+	r3, _ := m2.updateAccounts(keyMsg("ctrl+d"))
+	r4, _ := r3.(Model).updateAccounts(keyMsg("ctrl+d"))
+	if got := r4.(Model).wallets.Len(); got != 0 {
+		t.Errorf("dos ctrl+d deberían borrar la wallet, quedan %d", got)
+	}
+}
 
 // --- 2.3 ordenación ---
 

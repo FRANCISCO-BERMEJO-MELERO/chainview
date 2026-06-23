@@ -124,6 +124,13 @@ type Model struct {
 	addErr        error
 	accCursor     int
 	resolvingName string // nombre ENS que se está resolviendo para añadir, si hay
+	// Confirmación de borrado (2.8): el primer ctrl+d arma la confirmación sobre
+	// confirmDelAddr; el segundo (misma wallet) borra. esc o mover el cursor cancela.
+	confirmDel     bool
+	confirmDelAddr common.Address
+	// Detalle de wallet (2.7): modal con el agregado de la wallet seleccionada
+	// entre redes. Reutiliza txViewport (solo uno abierto a la vez, en otra tab).
+	walletDetailOpen bool
 
 	// Pestaña Balances
 	balState   loadState
@@ -528,7 +535,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // onEnterTab ajusta el foco del input y lanza la carga de balances al entrar en
 // la pestaña Balances por primera vez.
 func (m *Model) onEnterTab() tea.Cmd {
-	m.txDetailOpen = false // cambiar de pestaña cierra el modal de detalle
+	m.txDetailOpen = false // cambiar de pestaña cierra los modales de detalle
+	m.walletDetailOpen = false
 	switch m.active {
 	case tabAccounts:
 		return m.input.Focus()

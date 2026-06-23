@@ -29,8 +29,8 @@ func keyGroups() []keyGroup {
 			{"ctrl+c", "salir"},
 		}},
 		{"Cuentas", []keyHelp{
-			{"enter", "añadir wallet (address o nombre ENS)"},
-			{"ctrl+d", "borrar la wallet seleccionada"},
+			{"enter", "ver el detalle de la wallet (o añadir si escribes)"},
+			{"ctrl+d", "borrar la wallet seleccionada (confirma con ctrl+d)"},
 			{"↑ ↓", "moverse por la lista"},
 		}},
 		{"Balances", []keyHelp{
