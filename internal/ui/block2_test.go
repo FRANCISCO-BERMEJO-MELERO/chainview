@@ -114,13 +114,25 @@ func TestExplorerURLs(t *testing.T) {
 
 func keyMsg(s string) tea.KeyPressMsg {
 	switch s {
-	case "ctrl+d":
-		return tea.KeyPressMsg{Mod: tea.ModCtrl, Code: 'd'}
 	case "esc":
 		return tea.KeyPressMsg{Code: tea.KeyEscape}
-	default:
-		return tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
+	case "enter":
+		return tea.KeyPressMsg{Code: tea.KeyEnter}
+	case "tab":
+		return tea.KeyPressMsg{Code: tea.KeyTab}
+	case "shift+tab":
+		return tea.KeyPressMsg{Mod: tea.ModShift, Code: tea.KeyTab}
+	case "up":
+		return tea.KeyPressMsg{Code: tea.KeyUp}
+	case "down":
+		return tea.KeyPressMsg{Code: tea.KeyDown}
 	}
+	// ctrl+<letra>: p.ej. "ctrl+d", "ctrl+k", "ctrl+g".
+	if rest, ok := strings.CutPrefix(s, "ctrl+"); ok && len(rest) == 1 {
+		return tea.KeyPressMsg{Mod: tea.ModCtrl, Code: rune(rest[0])}
+	}
+	// Tecla imprimible simple (una runa): 'q', 'n', 's', '?'…
+	return tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
 }
 
 func TestConfirmDeleteRequiresTwoPresses(t *testing.T) {
