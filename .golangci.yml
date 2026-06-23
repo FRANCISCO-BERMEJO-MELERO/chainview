@@ -1,0 +1,37 @@
+# Configuración de golangci-lint (v2) para chainview.
+# Linters más exigentes que `go vet`, con una postura pragmática: nada de reglas
+# dogmáticas que choquen con el estilo del repo (comentarios en español, etc.).
+version: "2"
+
+linters:
+  enable:
+    - errcheck      # errores sin comprobar
+    - govet         # lo que ya corremos con `go vet`
+    - staticcheck   # análisis estático profundo
+    - ineffassign   # asignaciones que nunca se leen
+    - unused        # código muerto
+    - revive        # sustituto de golint, configurable
+    - gocritic      # diagnósticos de estilo/rendimiento
+
+  settings:
+    revive:
+      rules:
+        # Reglas útiles, sin imponer doc-comments en inglés sobre todo lo exportado.
+        - name: unreachable-code
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: unnecessary-stmt
+    gocritic:
+      # El grupo por defecto ya es razonable; desactivamos lo más ruidoso.
+      disabled-checks:
+        - ifElseChain   # cadenas if/else legibles que no merece la pena reescribir
+        - commentFormatting
+
+  exclusions:
+    generated: lax
+    rules:
+      # En los tests relajamos errcheck: muchos Fprintf/WriteString a buffers o
+      # servidores de prueba cuyo error no aporta nada comprobar.
+      - path: _test\.go
+        linters:
+          - errcheck

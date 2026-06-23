@@ -28,7 +28,7 @@ func Write(dir, name string, header []string, rows [][]string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("creando %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }() // red de seguridad ante returns tempranos
 
 	w := csv.NewWriter(f)
 	records := make([][]string, 0, len(rows)+1)
@@ -36,6 +36,10 @@ func Write(dir, name string, header []string, rows [][]string) (string, error) {
 	records = append(records, rows...)
 	if err := w.WriteAll(records); err != nil { // WriteAll hace Flush internamente
 		return "", fmt.Errorf("escribiendo CSV: %w", err)
+	}
+	// Cerramos explícitamente para no perder un error de escritura en el flush final.
+	if err := f.Close(); err != nil {
+		return "", fmt.Errorf("cerrando %s: %w", path, err)
 	}
 	return path, nil
 }

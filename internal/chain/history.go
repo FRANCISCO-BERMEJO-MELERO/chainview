@@ -88,7 +88,7 @@ func (p *EtherscanProvider) RecentTxs(ctx context.Context, chainID uint64, addr 
 	if err != nil {
 		return nil, fmt.Errorf("consultando Etherscan: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -143,7 +143,7 @@ func parseTxList(body []byte, chainID uint64) ([]Tx, error) {
 		if detail == "" {
 			detail = resp.Message
 		}
-		return nil, fmt.Errorf("Etherscan: %s", detail)
+		return nil, fmt.Errorf("error de Etherscan: %s", detail)
 	}
 
 	var raw []etherscanTx

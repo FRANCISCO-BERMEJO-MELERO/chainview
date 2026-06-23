@@ -68,7 +68,7 @@ func NewBlockscoutProvider(networks []Network) *BlockscoutProvider {
 func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr common.Address, page, perPage int) ([]Tx, error) {
 	base, ok := p.hosts[chainID]
 	if !ok {
-		return nil, fmt.Errorf("Blockscout: red no soportada (chain id %d)", chainID)
+		return nil, fmt.Errorf("red no soportada por Blockscout (chain id %d)", chainID)
 	}
 
 	q := url.Values{}
@@ -88,7 +88,7 @@ func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr
 	if err != nil {
 		return nil, fmt.Errorf("consultando Blockscout: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -104,7 +104,7 @@ func (p *BlockscoutProvider) RecentTxs(ctx context.Context, chainID uint64, addr
 func (p *BlockscoutProvider) TokenBalances(ctx context.Context, chainID uint64, addr common.Address) ([]TokenBalance, error) {
 	base, ok := p.hosts[chainID]
 	if !ok {
-		return nil, fmt.Errorf("Blockscout: red no soportada (chain id %d)", chainID)
+		return nil, fmt.Errorf("red no soportada por Blockscout (chain id %d)", chainID)
 	}
 
 	key := fmt.Sprintf("%d:%s", chainID, addr.Hex())
@@ -128,7 +128,7 @@ func (p *BlockscoutProvider) TokenBalances(ctx context.Context, chainID uint64, 
 	if err != nil {
 		return nil, fmt.Errorf("consultando Blockscout: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

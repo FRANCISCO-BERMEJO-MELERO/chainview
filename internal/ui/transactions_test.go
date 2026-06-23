@@ -27,7 +27,7 @@ func TestSortDedupTxRows(t *testing.T) {
 		t.Fatalf("esperaba 3 tras dedup, hay %d", len(got))
 	}
 	// Orden por fecha desc: el más reciente primero.
-	if !(got[0].tx.Timestamp.After(got[1].tx.Timestamp) && got[1].tx.Timestamp.After(got[2].tx.Timestamp)) {
+	if !got[0].tx.Timestamp.After(got[1].tx.Timestamp) || !got[1].tx.Timestamp.After(got[2].tx.Timestamp) {
 		t.Error("no quedó ordenado por fecha desc")
 	}
 }
@@ -66,17 +66,17 @@ func TestNextTxFilterCycles(t *testing.T) {
 }
 
 func TestClampScroll(t *testing.T) {
-	cap := 5
+	viewCap := 5
 	// Cursor por debajo de la ventana: la sube.
-	if got := clampScroll(0, 20, cap, 10); got != 0 {
+	if got := clampScroll(0, 20, viewCap, 10); got != 0 {
 		t.Errorf("scroll subir = %d, quiero 0", got)
 	}
 	// Cursor por debajo del final visible: la baja para que entre.
-	if got := clampScroll(9, 20, cap, 0); got != 5 {
+	if got := clampScroll(9, 20, viewCap, 0); got != 5 {
 		t.Errorf("scroll bajar = %d, quiero 5", got)
 	}
 	// Pocos elementos: sin desplazamiento.
-	if got := clampScroll(2, 3, cap, 0); got != 0 {
+	if got := clampScroll(2, 3, viewCap, 0); got != 0 {
 		t.Errorf("pocos elementos = %d, quiero 0", got)
 	}
 }
