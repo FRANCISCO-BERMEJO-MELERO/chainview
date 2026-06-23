@@ -1,14 +1,14 @@
-# Guion de grabación del GIF de demostración de chainview, para vhs.
+# vhs script that records chainview's demo GIF.
 #
-# Requisitos: vhs (https://github.com/charmbracelet/vhs), ttyd y ffmpeg.
-# Uso, desde la raíz del repo:
+# Requirements: vhs (https://github.com/charmbracelet/vhs), ttyd and ffmpeg.
+# Usage, from the repo root:
 #
 #   make build
 #   vhs .github/assets/demo.tape
 #
-# Graba con datos REALES (vitalik.eth) en un entorno XDG temporal y aislado, así
-# que no toca tu configuración ni tus wallets. Se limita a las 4 redes
-# principales (ETH/ARB/Base/OP) para que las cargas de red sean rápidas.
+# Records with REAL data (vitalik.eth) in an isolated, temporary XDG environment,
+# so it never touches your config or wallets. Limited to the 4 main networks
+# (ETH/ARB/Base/OP) to keep network loads fast.
 
 Output ".github/assets/demo.gif"
 
@@ -20,7 +20,7 @@ Set Padding 18
 Set Theme "Catppuccin Mocha"
 Set Framerate 24
 
-# --- Preparación (oculta): entorno XDG aislado y limpieza de pantalla ---
+# --- Setup (hidden): isolated XDG environment and clear screen ---
 Hide
 Type "D=$(mktemp -d)"
 Enter
@@ -36,32 +36,32 @@ Type "clear"
 Enter
 Show
 
-# --- Portada de bienvenida ---
+# --- Welcome screen ---
 Type "./bin/chainview"
 Enter
 Sleep 2.5s
 
-# entrar y saltar el tour
+# enter and skip the tour
 Enter
 Sleep 1.2s
 Escape
 Sleep 800ms
 
-# --- Cuentas: añadir una wallet por ENS ---
+# --- Accounts: add a wallet by ENS ---
 Type@120ms "vitalik.eth"
 Sleep 900ms
 Enter
 Sleep 4.5s
 
-# --- Balances: tabla multi-red + valor en fiat + total ---
+# --- Balances: multi-network table + fiat value + total ---
 Tab
-Sleep 13s
+Sleep 17s
 
-# --- Transacciones: historial decodificado con badges ---
+# --- Transactions: decoded history with badges ---
 Tab
 Sleep 12s
 
-# --- Paleta de comandos (ctrl+k) ---
+# --- Command palette (ctrl+k) ---
 Ctrl+K
 Sleep 1s
 Type@120ms "balances"
@@ -69,12 +69,12 @@ Sleep 1.5s
 Escape
 Sleep 600ms
 
-# --- Ayuda ---
+# --- Help ---
 Type "?"
 Sleep 2s
 Escape
 Sleep 700ms
 
-# salir
+# quit
 Type "q"
 Sleep 1s
