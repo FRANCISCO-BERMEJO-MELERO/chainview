@@ -30,7 +30,7 @@ func (m Model) renderWelcome() string {
 	tagline := m.styles.Balance.Render("Monitor watch-only de wallets EVM, en tu terminal")
 
 	intro := m.styles.Faint.Render(strings.Join([]string{
-		"Sigue balances en Ethereum, Arbitrum, Base y Optimism,",
+		"Sigue balances en Ethereum, Arbitrum, Base, Optimism y más,",
 		"con historial de transacciones y el gas en tiempo real.",
 		"Solo lectura: nunca pide claves privadas ni firma nada.",
 	}, "\n"))

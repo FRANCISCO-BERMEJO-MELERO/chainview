@@ -42,6 +42,9 @@ var gasLabels = map[uint64]string{
 	chain.ChainArbitrum: "ARB",
 	chain.ChainBase:     "BASE",
 	chain.ChainOptimism: "OP",
+	chain.ChainPolygon:  "POL",
+	chain.ChainScroll:   "SCR",
+	chain.ChainLinea:    "LINEA",
 }
 
 func gasLabel(chainID uint64) string {
