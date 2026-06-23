@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -18,9 +19,19 @@ import (
 //   - rpcCooldown: si una red devuelve 429, se marca en cooldown este tiempo;
 //     mientras dure servimos el último valor cacheado en vez de insistir.
 const (
-	rpcTTL      = 10 * time.Second
+	rpcTTL = 10 * time.Second
+	// rpcCooldown es el mínimo que una red rate-limited queda en cooldown.
 	rpcCooldown = 30 * time.Second
+	// rpcCooldownJitter es el margen aleatorio que se suma al cooldown para
+	// desincronizar los reintentos: si varias redes caen a la vez, no expiran
+	// todas en el mismo instante provocando una nueva ráfaga (thundering herd).
+	rpcCooldownJitter = 10 * time.Second
 )
+
+// cooldownDuration devuelve el cooldown con jitter: rpcCooldown + [0, jitter).
+func cooldownDuration() time.Duration {
+	return rpcCooldown + time.Duration(rand.Int63n(int64(rpcCooldownJitter)))
+}
 
 // errRateLimited indica que la red está rate-limited y no hay valor cacheado que
 // servir.
@@ -87,7 +98,7 @@ func (c *Client) cachedBig(ctx context.Context, key string, chainID uint64, fetc
 		if isRateLimit(err) {
 			c.stats.rateLimitHits.Add(1)
 			c.rpcMu.Lock()
-			c.cooldown[chainID] = time.Now().Add(rpcCooldown)
+			c.cooldown[chainID] = time.Now().Add(cooldownDuration())
 			e, cached := c.rpcCache[key]
 			c.rpcMu.Unlock()
 			if cached {

@@ -532,7 +532,7 @@ func (m Model) renderTransactions() string {
 	case m.txState == stateLoading && len(m.txs) == 0:
 		return m.renderState(m.spinner.View(), "Cargando transacciones…", "")
 	case m.txState == stateError:
-		return m.renderState("⚠", "No se pudo cargar el historial", m.txErr.Error()+" — pulsa r para reintentar")
+		return m.renderState("⚠", "No se pudo cargar el historial", chain.DescribeNetErr(m.txErr)+" — pulsa r para reintentar")
 	case m.txState == stateLoaded && len(m.txs) == 0:
 		return m.renderState("◯", "Sin transacciones", "para "+m.displayName(m.txWallet))
 	}
