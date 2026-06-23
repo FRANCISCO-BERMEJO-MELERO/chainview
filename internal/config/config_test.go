@@ -160,6 +160,31 @@ func TestFiatCurrencyDefaultAndSanitize(t *testing.T) {
 	}
 }
 
+func TestThemeDefaultAndSanitize(t *testing.T) {
+	dir := t.TempDir()
+
+	// Sin archivo: default auto.
+	cfg, _ := loadFrom(filepath.Join(dir, "missing.toml"))
+	if cfg.Theme != "auto" {
+		t.Fatalf("default Theme = %q, quiero auto", cfg.Theme)
+	}
+
+	// Valor válido en mayúsculas se normaliza; valor desconocido cae a auto.
+	for in, want := range map[string]string{"LIGHT": "light", "Dark": "dark", "rosa": "auto"} {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		if err := os.WriteFile(path, []byte(`theme = "`+in+`"`+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		cfg, err := loadFrom(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.Theme != want {
+			t.Errorf("theme=%q -> %q, quiero %q", in, cfg.Theme, want)
+		}
+	}
+}
+
 func TestRefreshSecondsSanitized(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.toml")
 	if err := os.WriteFile(path, []byte("refresh_seconds = 0\n"), 0o600); err != nil {

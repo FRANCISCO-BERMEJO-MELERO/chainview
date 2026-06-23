@@ -14,6 +14,10 @@ refresh_seconds = 15
 # (v1 solo soporta USD; más monedas llegarán en una versión posterior.)
 fiat_currency = "usd"
 
+# Tema de color: "auto" (detecta el fondo del terminal), "dark" o "light".
+# Por defecto: auto. Puedes cambiarlo en caliente desde la app (Ctrl+K → Tema).
+theme = "auto"
+
 # API key de Etherscan. OPCIONAL: por defecto el historial de transacciones se
 # obtiene de Blockscout SIN ninguna key. Si defines una key, chainview usará
 # Etherscan en su lugar. Tiene prioridad la variable de entorno ETHERSCAN_API_KEY.

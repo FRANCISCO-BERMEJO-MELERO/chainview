@@ -70,6 +70,12 @@ type Model struct {
 	// Descubrimiento de tokens ERC-20 (1.2). Keyless (Blockscout); nil lo desactiva.
 	tokenProvider chain.TokenBalanceProvider
 
+	// Tema (2.1): themePref es la preferencia (dark/light/auto); themeNow es la
+	// paleta efectiva ya aplicada (dark/light). Con "auto" se resuelve al recibir
+	// el color de fondo del terminal (tea.BackgroundColorMsg).
+	themePref string
+	themeNow  string
+
 	// ensNames cachea en el Model los nombres ENS ya resueltos (address -> nombre)
 	// para mostrarlos sin tocar la red en el render.
 	ensNames map[common.Address]string
@@ -170,8 +176,18 @@ func noticeClearCmd(at time.Time) tea.Cmd {
 // NewModel construye el modelo raíz inyectando todas las dependencias: cliente
 // de cadena, almacenamiento de wallets, redes efectivas (con overrides de config)
 // e intervalo de refresco.
-func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider, ens *chain.ENSResolver, prices chain.PriceProvider, fiatCurrency string, tokens chain.TokenBalanceProvider, prefs *storage.Prefs) Model {
-	styles := DefaultStyles()
+func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.Network, refresh time.Duration, txProvider chain.TxProvider, ens *chain.ENSResolver, prices chain.PriceProvider, fiatCurrency string, tokens chain.TokenBalanceProvider, theme string, prefs *storage.Prefs) Model {
+	// El tema guardado en prefs (cambio en caliente) tiene prioridad sobre la
+	// config TOML. Con "auto" arrancamos en oscuro y ajustamos al detectar el fondo.
+	themePref := theme
+	if prefs != nil && prefs.Theme != "" {
+		themePref = prefs.Theme
+	}
+	themeNow := themePref
+	if themeNow == themeAuto {
+		themeNow = themeDark
+	}
+	styles := StylesFor(paletteByName(themeNow))
 	sp := spinner.New(
 		spinner.WithSpinner(spinner.Dot),
 		spinner.WithStyle(styles.Spinner),
@@ -204,6 +220,8 @@ func NewModel(client *chain.Client, wallets *storage.Wallets, networks []chain.N
 		fiatCurrency:  fiatCurrency,
 		prices:        make(map[chain.PriceQuery]float64),
 		tokenProvider: tokens,
+		themePref:     themePref,
+		themeNow:      themeNow,
 		prefs:         prefs,
 		// Mostramos la portada al arrancar salvo que el usuario pidiera ocultarla.
 		showWelcome: prefs == nil || !prefs.HideWelcome,
@@ -228,6 +246,7 @@ func (m Model) Init() tea.Cmd {
 		gasTickCmd(m.refresh),
 		m.fetchGasCmd(),
 		m.resolveWalletNamesCmd(),
+		tea.RequestBackgroundColor, // tema "auto": detectar el fondo del terminal
 	)
 }
 
@@ -399,6 +418,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tea.BackgroundColorMsg:
+		// Tema "auto": ajustamos la paleta al fondo real del terminal. Con un tema
+		// explícito (dark/light) ignoramos la detección.
+		if m.themePref == themeAuto {
+			if msg.IsDark() {
+				m.applyTheme(themeDark)
+			} else {
+				m.applyTheme(themeLight)
+			}
+		}
+		return m, nil
+
 	case ensAddMsg:
 		m.resolvingName = ""
 		if !msg.ok {
@@ -498,6 +529,28 @@ func (m *Model) onEnterTab() tea.Cmd {
 func (m Model) nextTab(delta int) tab {
 	n := len(orderedTabs)
 	return tab((int(m.active) + delta + n) % n)
+}
+
+// applyTheme cambia la paleta efectiva en caliente: reconstruye los estilos y el
+// del spinner (que cachea el suyo aparte).
+func (m *Model) applyTheme(name string) {
+	m.themeNow = name
+	m.styles = StylesFor(paletteByName(name))
+	m.spinner.Style = m.styles.Spinner
+}
+
+// cycleTheme alterna explícitamente entre claro y oscuro (deja de ser "auto") y
+// persiste la elección en prefs. Lo usa el command palette (2.2).
+func (m *Model) cycleTheme() {
+	next := themeDark
+	if m.themeNow == themeDark {
+		next = themeLight
+	}
+	m.themePref = next
+	m.applyTheme(next)
+	if m.prefs != nil {
+		_ = m.prefs.SetTheme(next)
+	}
 }
 
 // View dibuja toda la app como un frame que llena el terminal (ver layout.go).

@@ -28,12 +28,19 @@ const defaultRefreshSeconds = 15
 // soporta USD; más monedas son una mejora post-V1.
 const defaultFiatCurrency = "usd"
 
+// defaultTheme es el tema por defecto (2.1). "auto" detecta el fondo del terminal
+// y cae a oscuro si no puede.
+const defaultTheme = "auto"
+
 // Config es la configuración efectiva de la app.
 type Config struct {
 	// RefreshSeconds es cada cuántos segundos se refrescan los balances.
 	RefreshSeconds int `toml:"refresh_seconds"`
 	// FiatCurrency es la moneda de valoración (1.1). v1: solo "usd".
 	FiatCurrency string `toml:"fiat_currency"`
+	// Theme es el tema de color (2.1): "dark", "light" o "auto" (detecta el fondo
+	// del terminal). El usuario puede cambiarlo en caliente (se guarda en prefs).
+	Theme string `toml:"theme"`
 	// EtherscanAPIKey es OPCIONAL. Por defecto el historial de txs se obtiene de
 	// Blockscout sin ninguna key; si se define esta key (en el TOML o en la
 	// variable de entorno ETHERSCAN_API_KEY, que tiene prioridad), se usa
@@ -68,6 +75,7 @@ func Default() Config {
 	return Config{
 		RefreshSeconds: defaultRefreshSeconds,
 		FiatCurrency:   defaultFiatCurrency,
+		Theme:          defaultTheme,
 		RPC:            map[string]string{},
 	}
 }
@@ -106,6 +114,12 @@ func loadFrom(path string) (Config, error) {
 		cfg.FiatCurrency = defaultFiatCurrency
 	}
 	cfg.FiatCurrency = strings.ToLower(cfg.FiatCurrency)
+	cfg.Theme = strings.ToLower(strings.TrimSpace(cfg.Theme))
+	switch cfg.Theme {
+	case "dark", "light", "auto":
+	default:
+		cfg.Theme = defaultTheme // valor desconocido: auto
+	}
 	if cfg.RPC == nil {
 		cfg.RPC = map[string]string{}
 	}

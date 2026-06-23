@@ -30,6 +30,16 @@ type Prefs struct {
 	// significa "todas las redes del catálogo activas" (comportamiento por
 	// defecto, para que una instalación nueva no cambie de aspecto).
 	EnabledChains []uint64 `json:"enabled_chains"`
+
+	// Theme es el tema elegido por el usuario en caliente (dark/light/auto).
+	// Vacío = usar el de la config TOML. Tiene prioridad sobre la config.
+	Theme string `json:"theme,omitempty"`
+}
+
+// SetTheme fija el tema elegido en caliente y lo persiste.
+func (p *Prefs) SetTheme(name string) error {
+	p.Theme = name
+	return p.save()
 }
 
 // IsChainEnabled indica si una red debe mostrarse. Con la lista vacía (default),

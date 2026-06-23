@@ -6,30 +6,85 @@ import (
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/chain"
 )
 
-// Paleta de chainview: violeta como color de marca + verde menta como acento.
-// Se definen como constantes para tener un único punto de verdad de los colores;
-// ningún View debería usar códigos de color sueltos: todo pasa por Styles.
-const (
-	colorViolet = "#8B5CF6" // marca / título
-	colorMint   = "#5EEAD4" // acento / tab activo
-	colorText   = "#E5E7EB" // texto principal
-	colorFaint  = "#6B7280" // texto tenue (ayudas, secundario)
-	colorError  = "#F87171" // errores
-	colorGreen  = "#34D399" // tendencia a la baja (gas más barato)
-	colorBorder = "#3F3F5A" // bordes de paneles
-	colorSelBg  = "#332B57" // fondo de la fila seleccionada (barra violeta tenue)
-	colorSelFg  = "#F5F3FF" // texto sobre la fila seleccionada
-	colorAmber  = "#FBBF24" // tx saliente (tag OUT)
+// Palette son los colores de un tema, por rol (no por nombre de color). Es el
+// único punto de verdad de los colores: ninguna vista usa códigos sueltos, todo
+// pasa por Styles, que se construye a partir de una Palette (StylesFor). Así
+// añadir un tema es solo definir otra Palette.
+type Palette struct {
+	Violet string // marca / título
+	Mint   string // acento / tab activo / saldos
+	Text   string // texto principal
+	Faint  string // texto tenue (ayudas, secundario)
+	Error  string // errores
+	Green  string // tendencia a la baja (gas más barato) / ok
+	Border string // bordes de paneles
+	SelBg  string // fondo de la fila seleccionada
+	SelFg  string // texto sobre la fila seleccionada
+	Amber  string // tx saliente (tag OUT)
 
 	// Colores de marca de cada red, para el badge de la columna "Red".
-	colorEth  = "#7C8CF0" // Ethereum (azul-violeta)
-	colorArb  = "#28A0F0" // Arbitrum (azul)
-	colorBase = "#3C7DFF" // Base (azul)
-	colorOp   = "#FF5C5C" // Optimism (rojo)
+	Eth  string
+	Arb  string
+	Base string
+	Op   string
+}
+
+// paletteDark es el tema por defecto (violeta + verde menta sobre fondo oscuro).
+var paletteDark = Palette{
+	Violet: "#8B5CF6",
+	Mint:   "#5EEAD4",
+	Text:   "#E5E7EB",
+	Faint:  "#6B7280",
+	Error:  "#F87171",
+	Green:  "#34D399",
+	Border: "#3F3F5A",
+	SelBg:  "#332B57",
+	SelFg:  "#F5F3FF",
+	Amber:  "#FBBF24",
+	Eth:    "#7C8CF0",
+	Arb:    "#28A0F0",
+	Base:   "#3C7DFF",
+	Op:     "#FF5C5C",
+}
+
+// paletteLight es el tema claro: mismos roles, colores legibles sobre fondo
+// claro (texto oscuro, acentos más saturados, selección violeta muy tenue).
+var paletteLight = Palette{
+	Violet: "#6D28D9",
+	Mint:   "#0D9488",
+	Text:   "#1F2937",
+	Faint:  "#6B7280",
+	Error:  "#DC2626",
+	Green:  "#047857",
+	Border: "#C7C7D9",
+	SelBg:  "#EDE9FE",
+	SelFg:  "#4C1D95",
+	Amber:  "#B45309",
+	Eth:    "#4F5FD0",
+	Arb:    "#1577C9",
+	Base:   "#2563EB",
+	Op:     "#DC2626",
+}
+
+// themeNames son los presets válidos para la config (además de "auto").
+const (
+	themeDark  = "dark"
+	themeLight = "light"
+	themeAuto  = "auto"
 )
 
+// paletteByName resuelve una paleta concreta (dark/light). "auto" y cualquier
+// valor desconocido caen a oscuro: es el comportamiento histórico y el más
+// seguro hasta que la detección del fondo (BackgroundColorMsg) diga otra cosa.
+func paletteByName(name string) Palette {
+	if name == themeLight {
+		return paletteLight
+	}
+	return paletteDark
+}
+
 // Styles agrupa todos los estilos reutilizables de la TUI. Se construye una vez
-// (DefaultStyles) y se guarda en el Model, de modo que las vistas solo consultan
+// (StylesFor) y se guarda en el Model, de modo que las vistas solo consultan
 // estilos ya definidos en lugar de crearlos ad hoc.
 type Styles struct {
 	Title       lipgloss.Style
@@ -64,106 +119,113 @@ type Styles struct {
 	Badges  map[uint64]lipgloss.Style // chain ID -> estilo del badge de red
 }
 
-// DefaultStyles devuelve el tema por defecto (violeta + verde menta).
+// DefaultStyles devuelve el tema oscuro por defecto. Atajo de StylesFor(paletteDark)
+// que conservan los tests y el arranque hasta resolver el tema configurado.
 func DefaultStyles() Styles {
+	return StylesFor(paletteDark)
+}
+
+// StylesFor construye el conjunto de estilos a partir de una paleta.
+func StylesFor(p Palette) Styles {
+	col := lipgloss.Color
 	return Styles{
 		Title: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorViolet)).
+			Foreground(col(p.Violet)).
 			Bold(true),
 
 		TabActive: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorMint)).
+			Foreground(col(p.Mint)).
 			Bold(true).
 			Padding(0, 2),
 
 		TabInactive: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorFaint)).
+			Foreground(col(p.Faint)).
 			Padding(0, 2),
 
 		Panel: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorText)).
+			Foreground(col(p.Text)).
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(colorBorder)).
+			BorderForeground(col(p.Border)).
 			Padding(1, 2),
 
 		Error: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorError)).
+			Foreground(col(p.Error)).
 			Bold(true),
 
 		Faint: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorFaint)),
+			Foreground(col(p.Faint)),
 
 		Spinner: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorMint)),
+			Foreground(col(p.Mint)),
 
 		Balance: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorMint)).
+			Foreground(col(p.Mint)).
 			Bold(true),
 
 		TrendUp: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorError)).
+			Foreground(col(p.Error)).
 			Bold(true),
 
 		TrendDown: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorGreen)).
+			Foreground(col(p.Green)).
 			Bold(true),
 
 		Frame: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(colorBorder)).
+			BorderForeground(col(p.Border)).
 			Padding(0, 1),
 
 		Brand: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorViolet)).
+			Foreground(col(p.Violet)).
 			Bold(true),
 
 		Rule: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorBorder)),
+			Foreground(col(p.Border)),
 
 		StateTitle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorText)).
+			Foreground(col(p.Text)).
 			Bold(true),
 
 		NoticeError: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorError)).
+			Foreground(col(p.Error)).
 			Bold(true),
 
 		NoticeInfo: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorMint)),
+			Foreground(col(p.Mint)),
 
 		// Cabecera de tabla: texto pleno en negrita para que estructure la tabla
 		// (a diferencia del faint de los datos secundarios).
 		TableHeader: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorText)).
+			Foreground(col(p.Text)).
 			Bold(true),
 
-		// Fila seleccionada: barra de fondo violeta tenue a ancho completo. El
-		// realce no depende solo del color (el bloque se ve aunque el terminal no
-		// tenga truecolor), y se combina con el marcador "›".
+		// Fila seleccionada: barra de fondo a ancho completo. El realce no depende
+		// solo del color (el bloque se ve aunque el terminal no tenga truecolor), y
+		// se combina con el marcador "›".
 		RowSelected: lipgloss.NewStyle().
-			Background(lipgloss.Color(colorSelBg)).
-			Foreground(lipgloss.Color(colorSelFg)).
+			Background(col(p.SelBg)).
+			Foreground(col(p.SelFg)).
 			Bold(true),
 
 		Symbol: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorFaint)),
+			Foreground(col(p.Faint)),
 
 		Ok: lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colorGreen)),
+			Foreground(col(p.Green)),
 
 		// Tags de tipo: el color refuerza el significado (verde recibe, ámbar
 		// envía), pero el texto/símbolo siempre acompaña (no solo color).
-		TagIn:   lipgloss.NewStyle().Foreground(lipgloss.Color(colorGreen)).Bold(true),
-		TagOut:  lipgloss.NewStyle().Foreground(lipgloss.Color(colorAmber)).Bold(true),
-		TagSelf: lipgloss.NewStyle().Foreground(lipgloss.Color(colorFaint)),
-		TagCall: lipgloss.NewStyle().Foreground(lipgloss.Color(colorMint)),
-		TagNew:  lipgloss.NewStyle().Foreground(lipgloss.Color(colorViolet)).Bold(true),
+		TagIn:   lipgloss.NewStyle().Foreground(col(p.Green)).Bold(true),
+		TagOut:  lipgloss.NewStyle().Foreground(col(p.Amber)).Bold(true),
+		TagSelf: lipgloss.NewStyle().Foreground(col(p.Faint)),
+		TagCall: lipgloss.NewStyle().Foreground(col(p.Mint)),
+		TagNew:  lipgloss.NewStyle().Foreground(col(p.Violet)).Bold(true),
 
 		Badges: map[uint64]lipgloss.Style{
-			chain.ChainEthereum: lipgloss.NewStyle().Foreground(lipgloss.Color(colorEth)).Bold(true),
-			chain.ChainArbitrum: lipgloss.NewStyle().Foreground(lipgloss.Color(colorArb)).Bold(true),
-			chain.ChainBase:     lipgloss.NewStyle().Foreground(lipgloss.Color(colorBase)).Bold(true),
-			chain.ChainOptimism: lipgloss.NewStyle().Foreground(lipgloss.Color(colorOp)).Bold(true),
+			chain.ChainEthereum: lipgloss.NewStyle().Foreground(col(p.Eth)).Bold(true),
+			chain.ChainArbitrum: lipgloss.NewStyle().Foreground(col(p.Arb)).Bold(true),
+			chain.ChainBase:     lipgloss.NewStyle().Foreground(col(p.Base)).Bold(true),
+			chain.ChainOptimism: lipgloss.NewStyle().Foreground(col(p.Op)).Bold(true),
 		},
 	}
 }
