@@ -1,24 +1,24 @@
-<!-- Gracias por contribuir. Rellena lo relevante y borra lo que no aplique. -->
+<!-- Thanks for contributing. Fill in what's relevant and delete what doesn't apply. -->
 
-## Qué cambia
+## What changes
 
-<!-- Resumen del cambio y motivación. Enlaza la issue si existe (Closes #N). -->
+<!-- Summary of the change and motivation. Link the issue if any (Closes #N). -->
 
-## Tipo de cambio
+## Type of change
 
 - [ ] Bug fix
-- [ ] Nueva feature
-- [ ] Refactor / interno
-- [ ] Documentación
+- [ ] New feature
+- [ ] Refactor / internal
+- [ ] Documentation
 
-## Comprobaciones
+## Checks
 
-- [ ] `gofmt -l .` no lista nada
-- [ ] `go vet ./...` pasa
-- [ ] `make test` (`go test -race ./...`) en verde
-- [ ] `make lint` (`golangci-lint run`) sin issues
-- [ ] Si cambia el render de la TUI, regeneré las snapshots golden (`-update`) y revisé el diff
+- [ ] `gofmt -l .` prints nothing
+- [ ] `go vet ./...` passes
+- [ ] `make test` (`go test -race ./...`) is green
+- [ ] `make lint` (`golangci-lint run`) reports no issues
+- [ ] If the TUI rendering changed, I regenerated the golden snapshots (`-update`) and reviewed the diff
 
-## Notas
+## Notes
 
-<!-- Capturas, decisiones de diseño, cosas pendientes... -->
+<!-- Screenshots, design decisions, follow-ups... -->

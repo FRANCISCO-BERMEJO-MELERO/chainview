@@ -1,25 +1,25 @@
-name: Propuesta de feature
-description: Sugiere una mejora o nueva funcionalidad
+name: Feature request
+description: Suggest an improvement or new functionality
 labels: ["enhancement"]
 body:
   - type: textarea
-    id: problema
+    id: problem
     attributes:
-      label: Problema o necesidad
-      description: ¿Qué te gustaría poder hacer y por qué? Describe el caso de uso.
-      placeholder: Cuando sigo varias wallets, me gustaría...
+      label: Problem or need
+      description: What would you like to be able to do, and why? Describe the use case.
+      placeholder: When I track several wallets, I'd like to...
     validations:
       required: true
   - type: textarea
-    id: propuesta
+    id: proposal
     attributes:
-      label: Propuesta
-      description: Cómo te imaginas la solución (atajo, vista, opción de config...).
+      label: Proposal
+      description: How you imagine the solution (a shortcut, a view, a config option...).
     validations:
       required: false
   - type: textarea
-    id: alternativas
+    id: alternatives
     attributes:
-      label: Alternativas consideradas
+      label: Alternatives considered
     validations:
       required: false

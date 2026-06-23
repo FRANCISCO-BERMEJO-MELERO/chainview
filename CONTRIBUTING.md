@@ -1,75 +1,75 @@
-# Contribuir a chainview
+# Contributing to chainview
 
-¡Gracias por tu interés! chainview es un monitor de wallets EVM en el terminal,
-watch-only y keyless. Esta guía resume cómo levantar el entorno, el estilo del
-código y cómo proponer cambios.
+Thanks for your interest! chainview is a watch-only, keyless EVM wallet monitor
+for the terminal. This guide covers how to set up the environment, the code
+style, and how to propose changes.
 
-## Requisitos
+## Requirements
 
-- **Go 1.25** o superior.
-- `make` (opcional pero recomendado; los targets envuelven los comandos `go`).
-- [`golangci-lint`](https://golangci-lint.run) **v2** para pasar el linter en
-  local (la CI usa la v2.12.2).
+- **Go 1.25** or newer.
+- `make` (optional but recommended; the targets just wrap the `go` commands).
+- [`golangci-lint`](https://golangci-lint.run) **v2** to pass the linter locally
+  (CI uses v2.12.2).
 
-## Poner en marcha
+## Getting started
 
 ```sh
 make setup    # go mod download + tidy
-make run      # arranca la TUI sin compilar a disco
-make build    # binario en ./bin/chainview con la versión inyectada
+make run      # launch the TUI without building to disk
+make build    # binary at ./bin/chainview with version info baked in
 ```
 
-`chainview --help` lista las opciones; `chainview --version` muestra la versión
-de build. Para diagnosticar, `chainview --debug` (o `CHAINVIEW_DEBUG=1`).
+`chainview --help` lists the options; `chainview --version` prints the build
+version. To diagnose, `chainview --debug` (or `CHAINVIEW_DEBUG=1`).
 
-## Antes de abrir un PR
+## Before opening a PR
 
-Deja el árbol en verde con lo mismo que corre la CI:
+Leave the tree green with the same checks CI runs:
 
 ```sh
-gofmt -l .            # no debe listar nada
+gofmt -l .            # must print nothing
 go vet ./...
 make test             # go test -race ./...
 make lint             # golangci-lint run
 ```
 
-Los **tests golden** de la TUI comparan frames renderizados. Si cambias el
-render a propósito, regenera las snapshots y revisa el diff antes de
-commitearlo:
+The TUI **golden tests** compare rendered frames. If you change the rendering on
+purpose, regenerate the snapshots and review the diff before committing it:
 
 ```sh
 go test ./internal/ui/ -run TestGolden -update
 ```
 
-## Estilo
+## Style
 
-- Código formateado con `gofmt`; el linter (`.golangci.yml`) es la referencia.
-- **Comentarios y mensajes de usuario en español**, como el resto del repo.
-  Explican el *por qué*, no el *qué*.
-- Errores en minúscula y envueltos con contexto (`fmt.Errorf("...: %w", err)`).
-- Sin API keys ni dependencias que rompan el arranque keyless por defecto.
+- Code formatted with `gofmt`; the linter (`.golangci.yml`) is the reference.
+- The user-facing surface (UI strings, docs) is in **English**. Code comments
+  are currently in Spanish; match the surrounding file. Comments explain the
+  *why*, not the *what*.
+- Errors lowercase and wrapped with context (`fmt.Errorf("...: %w", err)`).
+- No API keys or dependencies that break the keyless-by-default startup.
 
-## Commits y ramas
+## Commits and branches
 
-- Trabaja en una rama de feature; los PR van contra `main`.
-- Mensajes de commit **naturales y descriptivos en español**, en imperativo
-  («Añade…», «Corrige…»). Sin prefijos de tipo, sin IDs de tarea y sin líneas
-  de co-autoría. Un commit por cambio lógico.
+- Work on a feature branch; PRs target `main`.
+- Commit messages should be **natural and descriptive**, in the imperative
+  ("Add…", "Fix…"). No type prefixes, no task IDs and no co-author lines. One
+  commit per logical change.
 
-## Diseño y decisiones
+## Design and decisions
 
-Las features grandes se diseñan antes de implementarlas. Las specs viven en
-`docs/` (carpeta local, no versionada): describen objetivo, decisiones y orden
-de implementación. Si propones algo de calado, abre antes una issue para
-acordar el enfoque.
+Larger features are designed before being implemented. Specs live under `docs/`
+(a local, untracked folder): they describe the goal, the decisions and the
+implementation order. If you propose something substantial, open an issue first
+to agree on the approach.
 
-## Reportar bugs y pedir features
+## Reporting bugs and requesting features
 
-Usa las plantillas de issue. Para bugs, incluye versión (`chainview --version`),
-SO/terminal y pasos para reproducir. Para vulnerabilidades, contacta en privado
-en lugar de abrir una issue pública.
+Use the issue templates. For bugs, include the version (`chainview --version`),
+your OS/terminal and steps to reproduce. For vulnerabilities, please reach out
+privately instead of opening a public issue.
 
-## Licencia
+## License
 
-Al contribuir aceptas que tu aportación se publique bajo la licencia
-[MIT](./LICENSE) del proyecto.
+By contributing you agree that your contribution is published under the
+project's [MIT](./LICENSE) license.

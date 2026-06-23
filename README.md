@@ -5,94 +5,97 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/FRANCISCO-BERMEJO-MELERO/chainview)](https://goreportcard.com/report/github.com/FRANCISCO-BERMEJO-MELERO/chainview)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-Monitor de wallets EVM en el terminal (TUI), watch-only. Sigue balances,
-tokens, valor en fiat, historial de transacciones y gas en tiempo real sobre
-Ethereum, Arbitrum, Base, Optimism, Polygon, Scroll y Linea (y cualquier red EVM
-que añadas) — **sin registrarte en ningún sitio ni configurar nada**.
+A watch-only EVM wallet monitor for your terminal (TUI). Tracks balances,
+tokens, fiat value, transaction history and gas in real time across Ethereum,
+Arbitrum, Base, Optimism, Polygon, Scroll and Linea (and any EVM network you
+add) — **with no sign-up and zero configuration**.
 
 <p align="center">
-  <img src=".github/assets/demo.gif" alt="Demo de chainview: balances multi-red con valor en fiat, historial de transacciones y paleta de comandos" width="100%">
+  <img src=".github/assets/demo.gif" alt="chainview demo: multi-network balances with fiat value, transaction history and the command palette" width="100%">
 </p>
 
-## Características
+## Features
 
-- **Balances multi-cuenta y multi-red** en una tabla, con refresco automático.
-- **Tokens ERC-20**: descubre y muestra los tokens de cada wallet, no solo el
-  saldo nativo.
-- **Valoración en fiat**: precio en USD por activo y **total de cartera**, vía
+- **Multi-account, multi-network balances** in one table, auto-refreshed.
+- **ERC-20 tokens**: discovers and shows each wallet's tokens, not just the
+  native balance.
+- **Fiat valuation**: USD price per asset and **total portfolio value**, via
   DefiLlama (keyless).
-- **Historial de transacciones** con la acción decodificada (`Transfer 100 USDC
-  → 0x…`) y un modal de detalle por transacción.
-- **Nombres ENS**: muestra `vitalik.eth` en vez de la address, y puedes añadir
-  cuentas tanto por address como por nombre ENS.
-- **Gas tracker** en vivo con tendencia por red.
-- **Paleta de comandos** (`Ctrl+K`): busca wallets, redes y acciones con filtrado
-  difuso, sin recordar atajos.
-- **Temas** claro/oscuro con detección automática del fondo del terminal
-  (configurable y alternable en caliente).
-- **Atajos de productividad**: copiar address/hash (`y`), abrir en el explorador
-  (`o`), ordenar columnas (`s`) y detalle agregado de wallet entre redes.
-- **Redes configurables**: añade cualquier cadena EVM desde el TOML (chainID +
-  RPC + explorador) sin recompilar.
-- **Keyless**: precios (DefiLlama), tokens e historial (Blockscout) y balances
-  (RPC públicos); cero API keys para empezar.
+- **Transaction history** with the decoded action (`Transfer 100 USDC → 0x…`)
+  and a per-transaction detail modal.
+- **ENS names**: shows `vitalik.eth` instead of the address, and you can add
+  accounts by address or ENS name.
+- **Live gas tracker** with per-network trend.
+- **Command palette** (`Ctrl+K`): fuzzy-search wallets, networks and actions
+  without memorizing shortcuts.
+- **Themes** light/dark with automatic terminal-background detection
+  (configurable and hot-swappable).
+- **Productivity shortcuts**: copy address/hash (`y`), open in the explorer
+  (`o`), sort columns (`s`) and an aggregated per-wallet detail across networks.
+- **Configurable networks**: add any EVM chain from the TOML (chainID + RPC +
+  explorer) without recompiling.
+- **Keyless**: prices (DefiLlama), tokens and history (Blockscout) and balances
+  (public RPCs) — zero API keys to get started.
 
-## Instalación
+## Installation
 
 ```sh
 go install github.com/FRANCISCO-BERMEJO-MELERO/chainview/cmd/chainview@latest
 ```
 
-O desde el repo:
+Or from the repo:
 
 ```sh
-make build   # binario en ./bin/chainview
+make build   # binary at ./bin/chainview
 make run
 ```
 
-## Uso
+## Usage
 
-Lanza `chainview`. En la pestaña **Cuentas**, escribe una address (`0x…`) o un
-nombre ENS (`vitalik.eth`) y pulsa Enter. Cambia de pestaña con `tab`.
+Launch `chainview`. In the **Accounts** tab, type an address (`0x…`) or an ENS
+name (`vitalik.eth`) and press Enter. Switch tabs with `tab`.
 
-`chainview --version` muestra la versión de build y `chainview --help` lista las
-opciones. Para diagnosticar, arranca con `chainview --debug` (o
-`CHAINVIEW_DEBUG=1`) o pulsa `ctrl+g` para ver métricas internas: llamadas RPC,
-aciertos de caché y rate-limits.
+`chainview --version` prints the build version and `chainview --help` lists the
+options. To diagnose, start with `chainview --debug` (or `CHAINVIEW_DEBUG=1`) or
+press `ctrl+g` to see internal metrics: RPC calls, cache hits and rate-limits.
 
-### Atajos
+### Shortcuts
 
-| Tecla            | Acción                                          |
+| Key              | Action                                          |
 | ---------------- | ----------------------------------------------- |
-| `tab` / `↹⇧`     | Cambiar de pestaña                              |
-| `ctrl+k`         | Paleta de comandos (buscar/ir/acciones)         |
-| `ctrl+g`         | Métricas / modo debug (RPCs, caché, rate-limits) |
-| `?`              | Mostrar/ocultar la ayuda                        |
-| `↑` `↓`          | Moverse por listas y tablas                     |
-| `enter`          | Añadir wallet / detalle de wallet o de tx       |
-| `ctrl+d`         | Borrar la wallet seleccionada (confirma con otro `ctrl+d`) |
-| `y` / `o`        | Copiar address/hash / abrir en el explorador    |
-| `s` / `S`        | Ordenar columna / invertir el orden             |
-| `f`              | Filtrar (wallet en Balances, red en Txs)        |
-| `n`              | Elegir redes visibles                           |
-| `e`              | Exportar a CSV                                  |
-| `r`              | Recargar balances / transacciones               |
-| `esc`            | Cerrar modal / overlay                          |
-| `q` / `ctrl+c`   | Salir                                           |
+| `tab` / `↹⇧`     | Switch tab                                      |
+| `ctrl+k`         | Command palette (search/go/actions)             |
+| `ctrl+g`         | Metrics / debug mode (RPCs, cache, rate-limits) |
+| `?`              | Toggle help                                     |
+| `↑` `↓`          | Move through lists and tables                   |
+| `enter`          | Add wallet / wallet or tx detail                |
+| `ctrl+d`         | Delete the selected wallet (confirm with another `ctrl+d`) |
+| `y` / `o`        | Copy address/hash / open in the explorer        |
+| `s` / `S`        | Sort column / reverse order                     |
+| `f`              | Filter (wallet in Balances, network in Txs)     |
+| `n`              | Choose visible networks                         |
+| `e`              | Export to CSV                                   |
+| `r`              | Reload balances / transactions                  |
+| `esc`            | Close modal / overlay                           |
+| `q` / `ctrl+c`   | Quit                                            |
 
-## Configuración
+## Configuration
 
-chainview funciona sin configuración. Para personalizar, copia el ejemplo:
+chainview works with no configuration. To customize, copy the example:
 
 ```sh
 cp config.example.toml ~/.config/chainview/config.toml
 ```
 
-Ver [`config.example.toml`](./config.example.toml) para todas las opciones:
-intervalo de refresco, moneda fiat, overrides de RPC por red, alta de redes
-personalizadas (`[[network]]`), y la API key opcional de Etherscan
-(`ETHERSCAN_API_KEY` como variable de entorno tiene prioridad).
+See [`config.example.toml`](./config.example.toml) for all options: refresh
+interval, fiat currency, per-network RPC overrides, custom-network definitions
+(`[[network]]`), and the optional Etherscan API key (the `ETHERSCAN_API_KEY`
+environment variable takes precedence).
 
-## Licencia
+## Contributing
 
-MIT — ver [LICENSE](./LICENSE).
+Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
