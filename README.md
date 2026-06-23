@@ -1,5 +1,10 @@
 # chainview
 
+[![CI](https://github.com/FRANCISCO-BERMEJO-MELERO/chainview/actions/workflows/ci.yml/badge.svg)](https://github.com/FRANCISCO-BERMEJO-MELERO/chainview/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/FRANCISCO-BERMEJO-MELERO/chainview/branch/main/graph/badge.svg)](https://codecov.io/gh/FRANCISCO-BERMEJO-MELERO/chainview)
+[![Go Report Card](https://goreportcard.com/badge/github.com/FRANCISCO-BERMEJO-MELERO/chainview)](https://goreportcard.com/report/github.com/FRANCISCO-BERMEJO-MELERO/chainview)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 Monitor de wallets EVM en el terminal (TUI), watch-only. Sigue balances,
 tokens, valor en fiat, historial de transacciones y gas en tiempo real sobre
 Ethereum, Arbitrum, Base, Optimism, Polygon, Scroll y Linea (y cualquier red EVM
@@ -46,9 +51,10 @@ make run
 Lanza `chainview`. En la pestaña **Cuentas**, escribe una address (`0x…`) o un
 nombre ENS (`vitalik.eth`) y pulsa Enter. Cambia de pestaña con `tab`.
 
-Para diagnosticar, arranca con `chainview --debug` (o `CHAINVIEW_DEBUG=1`) o pulsa
-`ctrl+g` para ver métricas internas: llamadas RPC, aciertos de caché y
-rate-limits.
+`chainview --version` muestra la versión de build y `chainview --help` lista las
+opciones. Para diagnosticar, arranca con `chainview --debug` (o
+`CHAINVIEW_DEBUG=1`) o pulsa `ctrl+g` para ver métricas internas: llamadas RPC,
+aciertos de caché y rate-limits.
 
 ### Atajos
 
