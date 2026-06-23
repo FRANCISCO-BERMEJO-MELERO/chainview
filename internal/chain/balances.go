@@ -21,6 +21,25 @@ type BalanceResult struct {
 	Address common.Address
 	Wei     *big.Int
 	Err     error
+
+	// Tokens son los ERC-20 que la wallet tiene en esta red (1.2). Lo puebla
+	// FetchAll cuando hay un TokenBalanceProvider; vacío si no.
+	Tokens    []TokenBalance
+	TokensErr error // error del descubrimiento de tokens, aislado del nativo
+}
+
+// TokenBalance es el saldo de un ERC-20 concreto de una wallet en una red (1.2).
+type TokenBalance struct {
+	Token    common.Address
+	Symbol   string
+	Decimals uint8
+	Balance  *big.Int // cantidad en unidades mínimas (sin escalar por decimals)
+}
+
+// TokenBalanceProvider descubre los ERC-20 que una address tiene en una red. La
+// UI depende de la interfaz (no de Blockscout) para poder mockearla en tests.
+type TokenBalanceProvider interface {
+	TokenBalances(ctx context.Context, chainID uint64, addr common.Address) ([]TokenBalance, error)
 }
 
 // FetchAll consulta en paralelo el balance de cada (address × network) y
@@ -34,7 +53,11 @@ type BalanceResult struct {
 //     el resto de peticiones, y queremos que cada red falle de forma aislada.
 //   - El context (con timeout, puesto por quien llama) acota toda la tanda: si se
 //     cancela, las llamadas en vuelo se abortan y no quedan goroutines colgadas.
-func (c *Client) FetchAll(ctx context.Context, addrs []common.Address, networks []Network) []BalanceResult {
+//
+// El parámetro tokens es opcional (puede ser nil): si se aporta, cada celda
+// descubre además sus ERC-20 (1.2), con el mismo aislamiento de fallos (el error
+// de tokens va en TokensErr y no afecta al saldo nativo).
+func (c *Client) FetchAll(ctx context.Context, addrs []common.Address, networks []Network, tokens TokenBalanceProvider) []BalanceResult {
 	results := make([]BalanceResult, len(addrs)*len(networks))
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -51,6 +74,11 @@ func (c *Client) FetchAll(ctx context.Context, addrs []common.Address, networks 
 				wei, err := c.BalanceAt(ctx, chainID, addr)
 				results[idx].Wei = wei
 				results[idx].Err = err
+				if tokens != nil {
+					tb, terr := tokens.TokenBalances(ctx, chainID, addr)
+					results[idx].Tokens = tb
+					results[idx].TokensErr = terr
+				}
 				return nil // nunca cancelamos la tanda por una celda
 			})
 			i++

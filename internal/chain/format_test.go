@@ -49,3 +49,23 @@ func TestFormatEther(t *testing.T) {
 		t.Fatalf("FormatEther = %q, quiero %q", got, "2.5")
 	}
 }
+
+func TestFormatFiat(t *testing.T) {
+	cases := []struct {
+		value    float64
+		currency string
+		want     string
+	}{
+		{8421.07, "usd", "$8,421.07"},
+		{1234567.5, "usd", "$1,234,567.50"},
+		{0, "usd", "$0.00"},
+		{12.3, "eur", "€12.30"},
+		{999.99, "gbp", "999.99 GBP"}, // moneda sin símbolo: código sufijo
+		{-5.5, "usd", "$-5.50"},
+	}
+	for _, c := range cases {
+		if got := FormatFiat(c.value, c.currency); got != c.want {
+			t.Errorf("FormatFiat(%v,%q) = %q, quiero %q", c.value, c.currency, got, c.want)
+		}
+	}
+}

@@ -51,7 +51,7 @@ func TestFetchAllConcurrent(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	res := c.FetchAll(ctx, addrs, networks)
+	res := c.FetchAll(ctx, addrs, networks, nil)
 
 	if len(res) != len(addrs)*len(networks) {
 		t.Fatalf("esperaba %d celdas, hay %d", len(addrs)*len(networks), len(res))
@@ -70,7 +70,7 @@ func TestFetchAllConcurrent(t *testing.T) {
 func TestFetchAllEmpty(t *testing.T) {
 	c := NewClient(DefaultNetworks())
 	defer c.Close()
-	if res := c.FetchAll(context.Background(), nil, DefaultNetworks()); len(res) != 0 {
+	if res := c.FetchAll(context.Background(), nil, DefaultNetworks(), nil); len(res) != 0 {
 		t.Fatalf("sin wallets esperaba 0 celdas, hay %d", len(res))
 	}
 }

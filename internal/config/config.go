@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/adrg/xdg"
@@ -23,19 +24,58 @@ const configPath = "chainview/config.toml"
 // (decisión D2: polling cada ~15 s).
 const defaultRefreshSeconds = 15
 
+// defaultFiatCurrency es la moneda de valoración por defecto (1.1). v1 solo
+// soporta USD; más monedas son una mejora post-V1.
+const defaultFiatCurrency = "usd"
+
+// defaultTheme es el tema por defecto (2.1). "auto" detecta el fondo del terminal
+// y cae a oscuro si no puede.
+const defaultTheme = "auto"
+
 // Config es la configuración efectiva de la app.
 type Config struct {
 	// RefreshSeconds es cada cuántos segundos se refrescan los balances.
 	RefreshSeconds int `toml:"refresh_seconds"`
+	// FiatCurrency es la moneda de valoración (1.1). v1: solo "usd".
+	FiatCurrency string `toml:"fiat_currency"`
+	// Theme es el tema de color (2.1): "dark", "light" o "auto" (detecta el fondo
+	// del terminal). El usuario puede cambiarlo en caliente (se guarda en prefs).
+	Theme string `toml:"theme"`
+	// EtherscanAPIKey es OPCIONAL. Por defecto el historial de txs se obtiene de
+	// Blockscout sin ninguna key; si se define esta key (en el TOML o en la
+	// variable de entorno ETHERSCAN_API_KEY, que tiene prioridad), se usa
+	// Etherscan en su lugar.
+	EtherscanAPIKey string `toml:"etherscan_api_key"`
 	// RPC mapea el slug de una red (chain.Network.Key, p.ej. "ethereum") a una
 	// URL RPC que sobreescribe la pública por defecto. Permite usar Alchemy/Infura.
+	// Vía heredada; `[[network]]` es la forma completa y recomendada.
 	RPC map[string]string `toml:"rpc"`
+	// Network son redes definidas/sobreescritas por el usuario (1.4). Si el
+	// chain_id coincide con una del catálogo, la sobreescribe (solo los campos no
+	// vacíos); si no, la añade.
+	Network []NetworkConfig `toml:"network"`
 }
 
-// Default devuelve la configuración por defecto (sin overrides de RPC).
+// NetworkConfig es una red declarada en el TOML (bloque `[[network]]`). Los
+// campos vacíos no sobreescriben a la red base correspondiente.
+type NetworkConfig struct {
+	Key           string `toml:"key"`
+	Name          string `toml:"name"`
+	ChainID       uint64 `toml:"chain_id"`
+	RPCURL        string `toml:"rpc_url"`
+	Symbol        string `toml:"symbol"`
+	Explorer      string `toml:"explorer"`
+	BlockscoutAPI string `toml:"blockscout_api"`
+	PriceChain    string `toml:"price_chain"`
+	NativeCoinID  string `toml:"native_coin_id"`
+}
+
+// Default devuelve la configuración por defecto (sin overrides de RPC ni redes).
 func Default() Config {
 	return Config{
 		RefreshSeconds: defaultRefreshSeconds,
+		FiatCurrency:   defaultFiatCurrency,
+		Theme:          defaultTheme,
 		RPC:            map[string]string{},
 	}
 }
@@ -70,20 +110,86 @@ func loadFrom(path string) (Config, error) {
 	if cfg.RefreshSeconds <= 0 {
 		cfg.RefreshSeconds = defaultRefreshSeconds
 	}
+	if strings.TrimSpace(cfg.FiatCurrency) == "" {
+		cfg.FiatCurrency = defaultFiatCurrency
+	}
+	cfg.FiatCurrency = strings.ToLower(cfg.FiatCurrency)
+	cfg.Theme = strings.ToLower(strings.TrimSpace(cfg.Theme))
+	switch cfg.Theme {
+	case "dark", "light", "auto":
+	default:
+		cfg.Theme = defaultTheme // valor desconocido: auto
+	}
 	if cfg.RPC == nil {
 		cfg.RPC = map[string]string{}
 	}
 	return cfg, nil
 }
 
-// Networks devuelve las redes por defecto con los overrides de RPC aplicados
-// según la config (por Network.Key).
+// Networks devuelve el catálogo efectivo: las redes por defecto, los overrides de
+// RPC del bloque `[rpc]` (vía heredada) y, encima, las redes del bloque
+// `[[network]]` (que sobreescriben por chain_id o se añaden). Las entradas de
+// `[[network]]` inválidas (sin chain_id, o nuevas sin rpc_url) se descartan sin
+// romper la carga.
 func (c Config) Networks() []chain.Network {
 	nets := chain.DefaultNetworks()
+
+	// (1) Overrides de RPC por Key (compatibilidad hacia atrás).
 	for i := range nets {
 		if url, ok := c.RPC[nets[i].Key]; ok && url != "" {
 			nets[i].RPCURL = url
 		}
 	}
+
+	// (2) Bloque [[network]]: override por chain_id o alta.
+	idx := make(map[uint64]int, len(nets))
+	for i, n := range nets {
+		idx[n.ChainID] = i
+	}
+	for _, nc := range c.Network {
+		if nc.ChainID == 0 {
+			continue // sin chain_id no podemos identificar ni dar de alta la red
+		}
+		if i, ok := idx[nc.ChainID]; ok {
+			nets[i] = overlayNetwork(nets[i], nc) // override de campos no vacíos
+			continue
+		}
+		if nc.RPCURL == "" {
+			continue // una red nueva necesita al menos un RPC
+		}
+		nets = append(nets, overlayNetwork(chain.Network{ChainID: nc.ChainID}, nc))
+		idx[nc.ChainID] = len(nets) - 1
+	}
 	return nets
+}
+
+// overlayNetwork copia sobre base solo los campos no vacíos de nc, de modo que un
+// `[[network]]` puede tocar únicamente lo que quiera cambiar (p.ej. solo el RPC)
+// sin perder los metadatos por defecto de esa red.
+func overlayNetwork(base chain.Network, nc NetworkConfig) chain.Network {
+	if nc.Key != "" {
+		base.Key = nc.Key
+	}
+	if nc.Name != "" {
+		base.Name = nc.Name
+	}
+	if nc.RPCURL != "" {
+		base.RPCURL = nc.RPCURL
+	}
+	if nc.Symbol != "" {
+		base.Symbol = nc.Symbol
+	}
+	if nc.Explorer != "" {
+		base.Explorer = nc.Explorer
+	}
+	if nc.BlockscoutAPI != "" {
+		base.BlockscoutAPI = nc.BlockscoutAPI
+	}
+	if nc.PriceChain != "" {
+		base.PriceChain = nc.PriceChain
+	}
+	if nc.NativeCoinID != "" {
+		base.NativeCoinID = nc.NativeCoinID
+	}
+	return base
 }

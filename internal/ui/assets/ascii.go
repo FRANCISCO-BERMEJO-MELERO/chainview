@@ -1,13 +1,23 @@
+// Package assets contiene los recursos estáticos de la TUI (arte ASCII).
 package assets
 
-// Title es el banner ASCII de chainview que se muestra en la cabecera de la TUI.
-// Se usa un raw string literal (backticks) porque el contenido es multilínea:
-// con comillas dobles Go no admite saltos de línea dentro del string.
-const Title = `
-▓▓▓  ▓   ▓  ▓▓▓  ▓▓▓ ▓   ▓ ▓   ▓ ▓▓▓ ▓▓▓▓▓ ▓   ▓
-▓ ░░░ ▓░  ▓░▓ ░░▓  ▓░░▓▓  ▓░▓░  ▓░ ▓░░▓░░░░░▓░  ▓░
-▓░ ░░░▓▓▓▓▓░▓▓▓▓▓░ ▓░░▓░▓ ▓░▓░░ ▓░░▓░░▓▓▓▓░░▓░▓ ▓░░
-▓░░   ▓░░░▓░▓░░░▓░░▓░░▓░░▓▓░░▓░▓ ░░▓░░▓░░░░ ▓▓░▓▓░░
- ▓▓▓  ▓░░░▓░▓░░░▓░▓▓▓░▓░░ ▓░░ ▓ ░ ▓▓▓░▓▓▓▓▓░▓░░ ▓░░
-  ░░░  ░░  ░░░░  ░░░░░ ░░  ░░  ░ ░ ░░░ ░░░░░ ░░░ ░░
-   ░░░  ░   ░ ░   ░ ░░░ ░   ░   ░   ░░░ ░░░░░ ░   ░`
+import "strings"
+
+// Logo es el banner ASCII de chainview (estilo "ANSI Shadow") para la pantalla de
+// bienvenida. Raw string multilínea; el salto inicial se recorta al usarlo.
+const Logo = `
+ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗██╗   ██╗██╗███████╗██╗    ██╗
+██╔════╝██║  ██║██╔══██╗██║████╗  ██║██║   ██║██║██╔════╝██║    ██║
+██║     ███████║███████║██║██╔██╗ ██║██║   ██║██║█████╗  ██║ █╗ ██║
+██║     ██╔══██║██╔══██║██║██║╚██╗██║╚██╗ ██╔╝██║██╔══╝  ██║███╗██║
+╚██████╗██║  ██║██║  ██║██║██║ ╚████║ ╚████╔╝ ██║███████╗╚███╔███╔╝
+ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝  ╚═══╝  ╚═╝╚══════╝ ╚══╝╚══╝ `
+
+// LogoCompact es una variante de una línea para terminales estrechos donde el
+// banner grande no cabe.
+const LogoCompact = "⛓  C H A I N V I E W"
+
+// LogoLines devuelve el banner grande como líneas, sin el salto inicial.
+func LogoLines() []string {
+	return strings.Split(strings.Trim(Logo, "\n"), "\n")
+}

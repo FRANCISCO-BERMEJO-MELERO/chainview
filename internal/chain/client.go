@@ -3,8 +3,11 @@ package chain
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+	"golang.org/x/sync/singleflight"
 )
 
 // Client es un cliente multi-red sobre go-ethereum. Abre las conexiones RPC
@@ -19,6 +22,50 @@ type Client struct {
 	mu       sync.RWMutex                 // protege el mapa conns
 	networks map[uint64]Network           // redes conocidas, indexadas por chain ID
 	conns    map[uint64]*ethclient.Client // conexiones ya abiertas (cache lazy)
+
+	tokenMu    sync.RWMutex          // protege tokenCache
+	tokenCache map[string]tokenEntry // metadatos de token resueltos por "chainID:address"
+
+	rpcMu    sync.Mutex           // protege rpcCache y cooldown
+	rpcCache map[string]rpcEntry  // balances/gas cacheados con TTL, por clave
+	cooldown map[uint64]time.Time // chain ID -> hasta cuándo está en cooldown por 429
+	sf       singleflight.Group   // coalescing de lecturas RPC idénticas concurrentes
+
+	stats clientStats // contadores de observabilidad (3.3)
+}
+
+// clientStats acumula contadores de observabilidad de la caché RPC (3.3).
+// Thread-safe vía atómicos: los tea.Cmd corren en goroutines concurrentes.
+type clientStats struct {
+	rpcCalls      atomic.Uint64 // lecturas reales contra el RPC (miss de caché)
+	cacheHits     atomic.Uint64 // servidas desde caché con TTL fresco
+	rateLimitHits atomic.Uint64 // respuestas 429 detectadas
+	staleServed   atomic.Uint64 // valores viejos servidos durante un cooldown
+}
+
+// Stats es una instantánea de los contadores del cliente para el overlay de debug.
+type Stats struct {
+	RPCCalls      uint64
+	CacheHits     uint64
+	RateLimitHits uint64
+	StaleServed   uint64
+}
+
+// Stats devuelve una instantánea de los contadores de la caché RPC.
+func (c *Client) Stats() Stats {
+	return Stats{
+		RPCCalls:      c.stats.rpcCalls.Load(),
+		CacheHits:     c.stats.cacheHits.Load(),
+		RateLimitHits: c.stats.rateLimitHits.Load(),
+		StaleServed:   c.stats.staleServed.Load(),
+	}
+}
+
+// tokenEntry es una entrada de la caché de metadatos de token. Guardamos también
+// los fallos (ok=false) para no reintentar RPC ante un token no estándar.
+type tokenEntry struct {
+	meta TokenMeta
+	ok   bool
 }
 
 // NewClient construye el cliente a partir de una lista de redes. No abre
@@ -29,8 +76,11 @@ func NewClient(networks []Network) *Client {
 		nets[n.ChainID] = n
 	}
 	return &Client{
-		networks: nets,
-		conns:    make(map[uint64]*ethclient.Client),
+		networks:   nets,
+		conns:      make(map[uint64]*ethclient.Client),
+		tokenCache: make(map[string]tokenEntry),
+		rpcCache:   make(map[string]rpcEntry),
+		cooldown:   make(map[uint64]time.Time),
 	}
 }
 
