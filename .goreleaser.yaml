@@ -1,0 +1,69 @@
+# Configuración de goreleaser para chainview (schema v2).
+# Construye binarios estáticos multiplataforma y los publica en una release de
+# GitHub al etiquetar `vX.Y.Z`. Homebrew/AUR/Docker quedan para el Bloque 5.
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: chainview
+    main: ./cmd/chainview
+    binary: chainview
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # Windows/arm64 no aporta lo suficiente para mantenerlo.
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: chainview
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+      - config.example.toml
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: Novedades
+      regexp: '^.*?(feat|añade|agrega)[:\s].*'
+      order: 0
+    - title: Correcciones
+      regexp: '^.*?(fix|corrige|arregla)[:\s].*'
+      order: 1
+    - title: Otros
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  draft: false
+  prerelease: auto
