@@ -46,6 +46,7 @@ type txNetResult struct {
 // Lleva la wallet para descartar respuestas de una wallet que ya no es la
 // seleccionada (evita pintar datos obsoletos al cambiar rápido).
 type txPageMsg struct {
+	gen     int // generación de carga (3.6)
 	wallet  common.Address
 	results []txNetResult
 }
@@ -125,7 +126,7 @@ func txSortName(key int) string {
 
 // fetchTxPagesCmd pide en paralelo las páginas indicadas (una goroutine por red),
 // decodificando de paso cada tx a su descripción legible. Error por red aislado.
-func (m Model) fetchTxPagesCmd(wallet common.Address, reqs []txReq) tea.Cmd {
+func (m Model) fetchTxPagesCmd(ctx context.Context, gen int, wallet common.Address, reqs []txReq) tea.Cmd {
 	provider := m.txProvider
 	resolver := m.client
 	symbols := make(map[uint64]string, len(m.allNetworks))
@@ -133,7 +134,7 @@ func (m Model) fetchTxPagesCmd(wallet common.Address, reqs []txReq) tea.Cmd {
 		symbols[n.ChainID] = n.Symbol
 	}
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 		defer cancel()
 
 		results := make([]txNetResult, len(reqs))
@@ -159,7 +160,7 @@ func (m Model) fetchTxPagesCmd(wallet common.Address, reqs []txReq) tea.Cmd {
 			}()
 		}
 		wg.Wait()
-		return txPageMsg{wallet: wallet, results: results}
+		return txPageMsg{gen: gen, wallet: wallet, results: results}
 	}
 }
 
@@ -281,7 +282,8 @@ func (m *Model) loadTxsCmd() tea.Cmd {
 		m.txState = stateLoaded
 		return nil
 	}
-	return tea.Batch(m.spinner.Tick, m.fetchTxPagesCmd(wallet, reqs))
+	ctx, gen := m.nextLoad()
+	return tea.Batch(m.spinner.Tick, m.fetchTxPagesCmd(ctx, gen, wallet, reqs))
 }
 
 // loadMoreTxsCmd pide la siguiente página de cada red activa no agotada y la
@@ -302,7 +304,8 @@ func (m *Model) loadMoreTxsCmd() tea.Cmd {
 		return nil // nada más que cargar
 	}
 	m.txState = stateLoading
-	return tea.Batch(m.spinner.Tick, m.fetchTxPagesCmd(m.txWallet, reqs))
+	ctx, gen := m.nextLoad()
+	return tea.Batch(m.spinner.Tick, m.fetchTxPagesCmd(ctx, gen, m.txWallet, reqs))
 }
 
 // updateTransactions maneja las teclas de la pestaña Transacciones.

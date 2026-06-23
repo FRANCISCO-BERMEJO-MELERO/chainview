@@ -44,11 +44,14 @@ func (m Model) renderDebug() string {
 	section("Sesión")
 	row("Redes activas", fmt.Sprintf("%d / %d", len(m.networks), len(m.allNetworks)))
 	row("Wallets", fmt.Sprintf("%d", m.wallets.Len()))
+	row("Generación carga", fmt.Sprintf("%d", m.loadGen))
 	row("Tema", m.themeNow)
 	row("Terminal", fmt.Sprintf("%d×%d  (contenido %d×%d)", m.width, m.height, m.contentW, m.contentH))
 
-	b.WriteString("\n" + m.styles.Faint.Render("ctrl+g o esc para cerrar"))
+	b.WriteString(m.styles.Faint.Render("ctrl+g o esc para cerrar"))
 
 	panel := m.styles.Panel.Render(strings.TrimRight(b.String(), "\n"))
+	// Clamp por si el panel no cabe en terminales bajos (no debe desbordar el frame).
+	panel = lipgloss.NewStyle().MaxWidth(m.contentW).MaxHeight(m.contentH).Render(panel)
 	return lipgloss.Place(m.contentW, m.contentH, lipgloss.Center, lipgloss.Center, panel)
 }

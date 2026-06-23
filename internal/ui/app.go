@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -99,6 +100,12 @@ type Model struct {
 	// `networks` es la vista filtrada por las redes activas del usuario, que es lo
 	// que consumen balances, gas y transacciones.
 	allNetworks []chain.Network
+
+	// Coordinación de cargas async (3.6): loadGen etiqueta cada carga; los
+	// resultados con una generación vieja se descartan. loadCancel cancela el
+	// trabajo de red en vuelo al iniciar una carga nueva o cambiar de contexto.
+	loadGen    int
+	loadCancel context.CancelFunc
 
 	spinner        spinner.Model
 	active         tab
@@ -416,11 +423,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case balancesMsg:
+		// Descartamos resultados de una carga ya superada (3.6).
+		if msg.gen != m.loadGen {
+			return m, nil
+		}
 		m.balResults = msg.results
 		m.balState = stateLoaded
 		m.clampBalCursor()
-		// Tasamos en fiat lo que acabamos de cargar (1.1).
-		cmds := []tea.Cmd{m.fetchPricesCmd()}
+		// Tasamos en fiat lo que acabamos de cargar (1.1), como nueva generación.
+		ctx, gen := m.nextLoad()
+		cmds := []tea.Cmd{m.fetchPricesCmd(ctx, gen)}
 		if n := countBalanceErrors(msg.results); n > 0 {
 			m.setNotice(noticeError, fmt.Sprintf("⚠ %d balance(s) no se cargaron", n))
 			cmds = append(cmds, noticeClearCmd(m.noticeUntil))
@@ -428,14 +440,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case pricesMsg:
+		if msg.gen != m.loadGen {
+			return m, nil
+		}
 		for q, price := range msg.prices {
 			m.prices[q] = price
 		}
 		return m, nil
 
 	case txPageMsg:
-		// Descartamos resultados de una wallet que ya no es la seleccionada.
-		if msg.wallet != m.txWallet {
+		// Descartamos resultados de una carga ya superada (cambio de wallet, red o
+		// pestaña avanzan la generación) (3.6).
+		if msg.gen != m.loadGen || msg.wallet != m.txWallet {
 			return m, nil
 		}
 		m.txState = stateLoaded
@@ -569,7 +585,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds := []tea.Cmd{refreshTickCmd(m.refresh)}
 		if m.active == tabBalances && m.balState != stateLoading && m.wallets.Len() > 0 {
 			m.balState = stateLoading
-			cmds = append(cmds, m.spinner.Tick, m.fetchBalancesCmd())
+			ctx, gen := m.nextLoad()
+			cmds = append(cmds, m.spinner.Tick, m.fetchBalancesCmd(ctx, gen))
 		}
 		return m, tea.Batch(cmds...)
 
@@ -596,6 +613,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// nextLoad invalida la carga anterior (cancela su contexto en vuelo y avanza la
+// generación, para descartar resultados que lleguen tarde) y devuelve un contexto
+// nuevo y la generación para la siguiente carga (3.6).
+func (m *Model) nextLoad() (context.Context, int) {
+	if m.loadCancel != nil {
+		m.loadCancel()
+	}
+	m.loadGen++
+	ctx, cancel := context.WithCancel(context.Background())
+	m.loadCancel = cancel
+	return ctx, m.loadGen
+}
+
+// cancelLoad cancela el trabajo de red en vuelo y avanza la generación sin iniciar
+// una carga nueva. Lo usan los cambios de contexto que no recargan de inmediato
+// (p.ej. navegar a Cuentas), para no aplicar resultados ya obsoletos.
+func (m *Model) cancelLoad() {
+	if m.loadCancel != nil {
+		m.loadCancel()
+		m.loadCancel = nil
+	}
+	m.loadGen++
+}
+
 // onEnterTab ajusta el foco del input y lanza la carga de balances al entrar en
 // la pestaña Balances por primera vez.
 func (m *Model) onEnterTab() tea.Cmd {
@@ -603,12 +644,14 @@ func (m *Model) onEnterTab() tea.Cmd {
 	m.walletDetailOpen = false
 	switch m.active {
 	case tabAccounts:
+		m.cancelLoad() // navegar a Cuentas cancela cualquier carga en vuelo (3.6)
 		return m.input.Focus()
 	case tabBalances:
 		m.input.Blur()
 		if m.balState == stateIdle && m.wallets.Len() > 0 {
 			m.balState = stateLoading
-			return tea.Batch(m.spinner.Tick, m.fetchBalancesCmd())
+			ctx, gen := m.nextLoad()
+			return tea.Batch(m.spinner.Tick, m.fetchBalancesCmd(ctx, gen))
 		}
 	case tabTransactions:
 		m.input.Blur()

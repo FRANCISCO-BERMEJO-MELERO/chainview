@@ -131,9 +131,10 @@ func (m Model) paletteCommands() []command {
 					return m, nil
 				}
 				m.active = tabBalances
+				m.balState = stateLoading // evita que onEnterTab dispare otra carga
 				cmd := m.onEnterTab()
-				m.balState = stateLoading
-				return m, tea.Batch(cmd, m.spinner.Tick, m.fetchBalancesCmd())
+				ctx, gen := m.nextLoad()
+				return m, tea.Batch(cmd, m.spinner.Tick, m.fetchBalancesCmd(ctx, gen))
 			},
 		},
 	)

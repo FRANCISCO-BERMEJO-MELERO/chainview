@@ -86,6 +86,7 @@ func (m Model) updateAccounts(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			_ = m.wallets.Remove(addr)
 			m.confirmDel = false
 			m.balState = stateIdle
+			m.cancelLoad() // el conjunto de wallets cambió: invalida cargas en vuelo (3.6)
 			m.clampAccCursor()
 			return m, nil
 		}
@@ -97,6 +98,7 @@ func (m Model) updateAccounts(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.confirmDel = false // mover el cursor cancela una confirmación pendiente
 		if m.accCursor > 0 {
 			m.accCursor--
+			m.cancelLoad() // cambia la wallet seleccionada: invalida cargas en vuelo (3.6)
 		}
 		return m, nil
 
@@ -104,6 +106,7 @@ func (m Model) updateAccounts(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.confirmDel = false
 		if m.accCursor < m.wallets.Len()-1 {
 			m.accCursor++
+			m.cancelLoad()
 		}
 		return m, nil
 

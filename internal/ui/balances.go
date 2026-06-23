@@ -13,30 +13,33 @@ import (
 	"github.com/FRANCISCO-BERMEJO-MELERO/chainview/internal/chain"
 )
 
-// balancesMsg transporta el resultado del fetch concurrente de balances.
+// balancesMsg transporta el resultado del fetch concurrente de balances. gen es la
+// generación de carga (3.6): si no coincide con la actual, el resultado se descarta.
 type balancesMsg struct {
+	gen     int
 	results []chain.BalanceResult
 }
 
 // pricesMsg transporta los precios fiat tasados para los activos en pantalla.
 type pricesMsg struct {
+	gen    int
 	prices map[chain.PriceQuery]float64
 }
 
 // fetchPricesCmd tasa en fiat los activos presentes en los balances cargados. Va
 // en background y captura el proveedor por valor; un fallo de tasación no rompe la
 // tabla (las celdas sin precio muestran "—").
-func (m Model) fetchPricesCmd() tea.Cmd {
+func (m Model) fetchPricesCmd(ctx context.Context, gen int) tea.Cmd {
 	provider := m.priceProvider
 	qs := m.priceQueries()
 	if provider == nil || len(qs) == 0 {
 		return nil
 	}
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 		prices, _ := provider.Prices(ctx, qs)
-		return pricesMsg{prices: prices}
+		return pricesMsg{gen: gen, prices: prices}
 	}
 }
 
@@ -71,15 +74,15 @@ func refreshTickCmd(d time.Duration) tea.Cmd {
 
 // fetchBalancesCmd lanza el fetch concurrente (wallets × redes) en background.
 // Captura las dependencias por valor para no cerrar sobre el Model completo.
-func (m Model) fetchBalancesCmd() tea.Cmd {
+func (m Model) fetchBalancesCmd(ctx context.Context, gen int) tea.Cmd {
 	client := m.client
 	addrs := m.wallets.List()
 	networks := m.networks
 	tokens := m.tokenProvider
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
-		return balancesMsg{results: client.FetchAll(ctx, addrs, networks, tokens)}
+		return balancesMsg{gen: gen, results: client.FetchAll(ctx, addrs, networks, tokens)}
 	}
 }
 
@@ -127,7 +130,8 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "r":
 		if m.balState != stateLoading && m.wallets.Len() > 0 {
 			m.balState = stateLoading
-			return m, tea.Batch(m.spinner.Tick, m.fetchBalancesCmd())
+			ctx, gen := m.nextLoad()
+			return m, tea.Batch(m.spinner.Tick, m.fetchBalancesCmd(ctx, gen))
 		}
 	}
 	return m, nil

@@ -116,7 +116,8 @@ func (m *Model) onNetworksChanged() tea.Cmd {
 	m.balState = stateIdle
 	if m.active == tabBalances && m.wallets.Len() > 0 {
 		m.balState = stateLoading
-		cmds = append(cmds, m.spinner.Tick, m.fetchBalancesCmd())
+		ctx, gen := m.nextLoad()
+		cmds = append(cmds, m.spinner.Tick, m.fetchBalancesCmd(ctx, gen))
 	}
 
 	// El historial multi-red depende de las redes activas: lo invalidamos. Si
