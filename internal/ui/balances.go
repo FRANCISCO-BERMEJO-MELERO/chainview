@@ -99,8 +99,31 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Alterna entre ver todas las wallets y solo la seleccionada en Cuentas.
 		m.balFocus = !m.balFocus
 		m.balCursor = 0
+	case "s":
+		m.balSortKey = (m.balSortKey + 1) % 4 // catálogo → valor → red → wallet → …
+		m.balCursor = 0
+	case "S", "shift+s":
+		m.balSortAsc = !m.balSortAsc
+		m.balCursor = 0
 	case "e":
 		return m, m.exportBalancesCmd()
+	case "y":
+		if row, ok := m.selectedBalRow(); ok {
+			val, label := balCopyTarget(row)
+			return m, copyToClipboardCmd(val, label)
+		}
+	case "o":
+		if row, ok := m.selectedBalRow(); ok {
+			addr := row.address
+			if row.token != nil {
+				addr = row.token.Token
+			}
+			if url, ok := m.explorerAddressURL(row.chainID, addr); ok {
+				return m, openURLCmd(url)
+			}
+			m.setNotice(noticeInfo, "Esta red no tiene explorador configurado")
+			return m, noticeClearCmd(m.noticeUntil)
+		}
 	case "r":
 		if m.balState != stateLoading && m.wallets.Len() > 0 {
 			m.balState = stateLoading
@@ -108,6 +131,24 @@ func (m Model) updateBalances(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// selectedBalRow devuelve la fila (nativo o token) bajo el cursor de Balances.
+func (m Model) selectedBalRow() (balRow, bool) {
+	rows := m.visibleRows()
+	if m.balCursor < 0 || m.balCursor >= len(rows) {
+		return balRow{}, false
+	}
+	return rows[m.balCursor], true
+}
+
+// balCopyTarget devuelve el dato a copiar de una fila y su etiqueta: la address de
+// la wallet (fila nativa) o la del contrato del token (fila de token).
+func balCopyTarget(row balRow) (value, label string) {
+	if row.token != nil {
+		return row.token.Token.Hex(), "address del token"
+	}
+	return row.address.Hex(), "address"
 }
 
 // visibleBalances son los balances que se muestran: todos, o solo los de la
@@ -164,7 +205,10 @@ type balRow struct {
 // fila nativa seguida de sus tokens, ordenados por valor fiat desc (los tasables
 // arriba) y, a igualdad, por símbolo (orden que ya trae el provider).
 func (m Model) visibleRows() []balRow {
-	vis := m.visibleBalances()
+	// Copiamos antes de ordenar: visibleBalances puede devolver m.balResults tal
+	// cual y no queremos mutar el orden original.
+	vis := append([]chain.BalanceResult(nil), m.visibleBalances()...)
+	m.sortBalances(vis)
 	rows := make([]balRow, 0, len(vis))
 	for _, r := range vis {
 		r := r
@@ -182,6 +226,47 @@ func (m Model) visibleRows() []balRow {
 		}
 	}
 	return rows
+}
+
+// sortBalances ordena en sitio las celdas visibles según balSortKey/balSortAsc
+// (2.3). Clave 0 = orden de catálogo (no toca). Ordena a nivel de wallet×red; los
+// tokens siguen colgando de su nativo al aplanar después.
+func (m Model) sortBalances(vis []chain.BalanceResult) {
+	if m.balSortKey == 0 {
+		return
+	}
+	less := func(i, j int) bool {
+		switch m.balSortKey {
+		case 1: // valor fiat del nativo
+			vi, _ := m.fiatValue(chain.PriceQuery{ChainID: vis[i].ChainID}, vis[i].Wei, 18)
+			vj, _ := m.fiatValue(chain.PriceQuery{ChainID: vis[j].ChainID}, vis[j].Wei, 18)
+			return vi < vj
+		case 2: // red
+			return m.networkName(vis[i].ChainID) < m.networkName(vis[j].ChainID)
+		case 3: // wallet
+			return m.displayName(vis[i].Address) < m.displayName(vis[j].Address)
+		}
+		return false
+	}
+	sort.SliceStable(vis, func(i, j int) bool {
+		if m.balSortAsc {
+			return less(i, j)
+		}
+		return less(j, i)
+	})
+}
+
+// sortKeyName traduce una clave de orden a su etiqueta para el indicador.
+func balSortName(key int) string {
+	switch key {
+	case 1:
+		return "valor"
+	case 2:
+		return "red"
+	case 3:
+		return "wallet"
+	}
+	return ""
 }
 
 // balanceColumns define las columnas de la tabla de balances. El espaciador flex
@@ -273,6 +358,13 @@ func (m Model) renderBalances() string {
 		}
 	}
 	ctx := m.styles.Balance.Render("Saldos") + m.styles.Faint.Render(" · "+scope)
+	if name := balSortName(m.balSortKey); name != "" {
+		arrow := "↓"
+		if m.balSortAsc {
+			arrow = "↑"
+		}
+		ctx += m.styles.Faint.Render(" · orden: " + name + " " + arrow)
+	}
 	if m.balState == stateLoading {
 		ctx += m.styles.Faint.Render("  " + m.spinner.View())
 	}

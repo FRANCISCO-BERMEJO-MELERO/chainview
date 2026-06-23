@@ -145,12 +145,12 @@ func (m Model) hintItems() []string {
 	case tabAccounts:
 		return []string{"enter añadir", "ctrl+d borrar", "↑↓ mover"}
 	case tabBalances:
-		return []string{"f filtrar", "e exportar", "r recargar", "n redes", "↑↓ mover"}
+		return []string{"y copiar", "o abrir", "s ordenar", "f filtrar", "e exportar", "r recargar", "n redes", "↑↓ mover"}
 	case tabTransactions:
 		if m.txDetailOpen {
 			return []string{"↑↓ desplazar", "esc cerrar"}
 		}
-		return []string{"enter detalle", "f filtrar red", "m cargar más", "e exportar", "r recargar", "n redes", "↑↓ mover"}
+		return []string{"enter detalle", "y copiar", "o abrir", "s ordenar", "f filtrar red", "m cargar más", "e exportar", "r recargar", "n redes", "↑↓ mover"}
 	}
 	return nil
 }

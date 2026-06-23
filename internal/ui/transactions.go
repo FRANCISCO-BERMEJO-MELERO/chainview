@@ -78,18 +78,49 @@ func (m Model) nextTxFilter() uint64 {
 	return 0
 }
 
-// visibleTxs son las txs que se muestran según el filtro de red.
+// visibleTxs son las txs que se muestran según el filtro de red, ya ordenadas
+// (2.3). Devuelve siempre una copia para no alterar el orden de m.txs.
 func (m Model) visibleTxs() []txRow {
-	if m.txNetFilter == 0 {
-		return m.txs
-	}
 	out := make([]txRow, 0, len(m.txs))
 	for _, r := range m.txs {
-		if r.tx.ChainID == m.txNetFilter {
+		if m.txNetFilter == 0 || r.tx.ChainID == m.txNetFilter {
 			out = append(out, r)
 		}
 	}
+	m.sortTxs(out)
 	return out
+}
+
+// sortTxs ordena en sitio según txSortKey/txSortAsc. La clave 0 (fecha) en
+// descendente reproduce el orden por defecto (más recientes primero).
+func (m Model) sortTxs(rows []txRow) {
+	less := func(i, j int) bool {
+		switch m.txSortKey {
+		case 1: // red
+			return m.networkName(rows[i].tx.ChainID) < m.networkName(rows[j].tx.ChainID)
+		case 2: // valor
+			return rows[i].tx.Value.Cmp(rows[j].tx.Value) < 0
+		default: // fecha
+			return rows[i].tx.Timestamp.Before(rows[j].tx.Timestamp)
+		}
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if m.txSortAsc {
+			return less(i, j)
+		}
+		return less(j, i)
+	})
+}
+
+// txSortName traduce la clave de orden de txs a su etiqueta.
+func txSortName(key int) string {
+	switch key {
+	case 1:
+		return "red"
+	case 2:
+		return "valor"
+	}
+	return "fecha"
 }
 
 // fetchTxPagesCmd pide en paralelo las páginas indicadas (una goroutine por red),
@@ -199,6 +230,16 @@ func describeTokenCall(ctx context.Context, r chain.TokenResolver, chainID uint6
 	}
 }
 
+// selectedTx devuelve la transacción bajo el cursor de la lista visible, o false
+// si no hay ninguna.
+func (m Model) selectedTx() (chain.Tx, bool) {
+	vis := m.visibleTxs()
+	if m.txCursor < 0 || m.txCursor >= len(vis) {
+		return chain.Tx{}, false
+	}
+	return vis[m.txCursor].tx, true
+}
+
 // selectedWallet devuelve la wallet sobre la que actúa la pestaña Transacciones:
 // la seleccionada en Cuentas. El segundo valor es false si no hay wallets.
 func (m Model) selectedWallet() (common.Address, bool) {
@@ -304,8 +345,26 @@ func (m Model) updateTransactions(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.txNetFilter = m.nextTxFilter()
 		m.txCursor = 0
 		m.txScroll = 0
+	case "s":
+		m.txSortKey = (m.txSortKey + 1) % 3 // fecha → red → valor → …
+		m.txCursor, m.txScroll = 0, 0
+	case "S", "shift+s":
+		m.txSortAsc = !m.txSortAsc
+		m.txCursor, m.txScroll = 0, 0
 	case "e":
 		return m, m.exportTxsCmd()
+	case "y":
+		if tx, ok := m.selectedTx(); ok {
+			return m, copyToClipboardCmd(tx.Hash, "hash")
+		}
+	case "o":
+		if tx, ok := m.selectedTx(); ok {
+			if url, ok := m.explorerTxURL(tx.ChainID, tx.Hash); ok {
+				return m, openURLCmd(url)
+			}
+			m.setNotice(noticeInfo, "Esta red no tiene explorador configurado")
+			return m, noticeClearCmd(m.noticeUntil)
+		}
 	case "enter":
 		vis := m.visibleTxs()
 		if m.txCursor >= 0 && m.txCursor < len(vis) {
@@ -373,7 +432,6 @@ func (m Model) txDetailContent(row txRow) string {
 		}
 		return a.Hex()
 	}
-
 	lines := []string{
 		label("Red") + m.networkBadge(tx.ChainID) + m.styles.Faint.Render(fmt.Sprintf("  %s (chain %d)", m.networkName(tx.ChainID), tx.ChainID)),
 		label("Tipo") + tagText,
@@ -469,8 +527,12 @@ func (m Model) renderTransactions() string {
 	if m.txNetFilter != 0 {
 		filterLabel = m.networkName(m.txNetFilter)
 	}
+	arrow := "↓"
+	if m.txSortAsc {
+		arrow = "↑"
+	}
 	ctx := m.styles.Balance.Render(m.displayName(m.txWallet)) +
-		m.styles.Faint.Render(" · "+filterLabel+" · "+fmt.Sprintf("%d txs", len(vis)))
+		m.styles.Faint.Render(" · "+filterLabel+" · "+fmt.Sprintf("%d txs", len(vis))+" · orden: "+txSortName(m.txSortKey)+" "+arrow)
 	if m.txState == stateLoading {
 		ctx += m.styles.Faint.Render("  " + m.spinner.View())
 	}

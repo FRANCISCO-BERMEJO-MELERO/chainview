@@ -130,6 +130,9 @@ type Model struct {
 	balResults []chain.BalanceResult
 	balCursor  int
 	balFocus   bool // true = solo la wallet seleccionada; false = todas
+	// Ordenación (2.3): clave (0=catálogo, 1=valor, 2=red, 3=wallet) y dirección.
+	balSortKey int
+	balSortAsc bool
 
 	// Pestaña Transacciones (historial multi-red por wallet)
 	txState      loadState
@@ -143,6 +146,9 @@ type Model struct {
 	txExhausted  map[uint64]bool // redes sin más páginas
 	txDetailOpen bool            // modal de detalle de la tx seleccionada
 	txViewport   viewport.Model  // contenido scrollable del modal
+	// Ordenación de txs (2.3): clave (0=fecha, 1=red, 2=valor) y dirección.
+	txSortKey int
+	txSortAsc bool
 }
 
 // noticeLevel clasifica el tono de un toast del footer.
@@ -404,6 +410,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.setNotice(noticeInfo, fmt.Sprintf("✓ %d filas exportadas a %s", msg.count, msg.path))
 		}
 		return m, noticeClearCmd(m.noticeUntil)
+
+	case copiedMsg:
+		if msg.err != nil {
+			m.setNotice(noticeError, "No se pudo copiar: "+msg.err.Error())
+		} else {
+			m.setNotice(noticeInfo, "✓ "+msg.label+" copiado al portapapeles")
+		}
+		return m, noticeClearCmd(m.noticeUntil)
+
+	case openedMsg:
+		if msg.err != nil {
+			m.setNotice(noticeError, "No se pudo abrir el navegador: "+msg.err.Error())
+			return m, noticeClearCmd(m.noticeUntil)
+		}
+		return m, nil
 
 	case ensResolvedMsg:
 		for addr, name := range msg.names {
