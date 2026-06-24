@@ -1,4 +1,4 @@
-# chainview
+# Chainview
 
 [![CI](https://github.com/FRANCISCO-BERMEJO-MELERO/chainview/actions/workflows/ci.yml/badge.svg)](https://github.com/FRANCISCO-BERMEJO-MELERO/chainview/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/FRANCISCO-BERMEJO-MELERO/chainview/branch/main/graph/badge.svg)](https://codecov.io/gh/FRANCISCO-BERMEJO-MELERO/chainview)
