@@ -26,7 +26,7 @@ func (c *Client) gasPriceAtRaw(ctx context.Context, chainID uint64) (*big.Int, e
 	}
 	wei, err := conn.SuggestGasPrice(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("gas price en chain id %d: %w", chainID, err)
+		return nil, fmt.Errorf("gas price on chain id %d: %w", chainID, err)
 	}
 	return wei, nil
 }

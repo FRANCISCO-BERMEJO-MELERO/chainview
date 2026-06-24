@@ -88,7 +88,7 @@ func Load() (Config, error) {
 
 	path, err := xdg.ConfigFile(configPath)
 	if err != nil {
-		return cfg, fmt.Errorf("resolviendo ruta de config: %w", err)
+		return cfg, fmt.Errorf("resolving config path: %w", err)
 	}
 	return loadFrom(path)
 }
@@ -103,7 +103,7 @@ func loadFrom(path string) (Config, error) {
 	}
 
 	if _, err := toml.DecodeFile(path, &cfg); err != nil {
-		return Default(), fmt.Errorf("leyendo config %s: %w", path, err)
+		return Default(), fmt.Errorf("reading config %s: %w", path, err)
 	}
 
 	// Saneamos valores inválidos en lugar de fallar.

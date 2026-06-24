@@ -40,10 +40,10 @@ func contentDims(width, height int) (w, h int) {
 func (m Model) renderFrame() string {
 	switch {
 	case m.width == 0 || m.height == 0:
-		return "iniciando…"
+		return "starting…"
 	case m.width < minWidth || m.height < minHeight:
 		msg := m.styles.Brand.Render("chainview") + "\n\n" +
-			m.styles.Faint.Render("Amplía la terminal\n(mín. 60×18)")
+			m.styles.Faint.Render("Enlarge the terminal\n(min. 60×18)")
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, msg)
 	}
 
@@ -95,15 +95,15 @@ func (m Model) statusLeft() string {
 		return style.Render(m.notice)
 	}
 	if m.lastGas.IsZero() {
-		return m.styles.Faint.Render("⟳ cargando…") + m.rateLimitedSuffix()
+		return m.styles.Faint.Render("⟳ loading…") + m.rateLimitedSuffix()
 	}
 	fresh := "⟳ " + sinceShort(m.lastGas)
 	if m.gasTotal > 0 && m.gasOK < m.gasTotal {
 		return m.styles.Faint.Render(fresh+" · ") +
-			m.styles.NoticeError.Render(fmt.Sprintf("%d/%d redes con error", m.gasTotal-m.gasOK, m.gasTotal)) +
+			m.styles.NoticeError.Render(fmt.Sprintf("%d/%d networks failed", m.gasTotal-m.gasOK, m.gasTotal)) +
 			m.rateLimitedSuffix()
 	}
-	return m.styles.Faint.Render(fmt.Sprintf("%s · %d/%d redes ok", fresh, m.gasOK, m.gasTotal)) +
+	return m.styles.Faint.Render(fmt.Sprintf("%s · %d/%d networks ok", fresh, m.gasOK, m.gasTotal)) +
 		m.rateLimitedSuffix()
 }
 
@@ -116,7 +116,7 @@ func (m Model) rateLimitedSuffix() string {
 	}
 	if n := len(m.client.RateLimitedChains()); n > 0 {
 		return m.styles.Faint.Render(" · ") +
-			m.styles.NoticeError.Render(fmt.Sprintf("⚠ %d limitada(s)", n))
+			m.styles.NoticeError.Render(fmt.Sprintf("⚠ %d limited", n))
 	}
 	return ""
 }
@@ -127,20 +127,20 @@ func (m Model) rateLimitedSuffix() string {
 // Los atajos que no quepan siguen documentados en el overlay de ayuda (?).
 func (m Model) statusRight(avail int) string {
 	if m.paletteOpen {
-		return m.styles.Faint.Render("↑↓ elegir · enter ejecutar · esc cerrar")
+		return m.styles.Faint.Render("↑↓ choose · enter run · esc close")
 	}
 	if m.helpOpen {
-		return m.styles.Faint.Render("? · esc cerrar")
+		return m.styles.Faint.Render("? · esc close")
 	}
 	if m.networksOpen {
-		return m.styles.Faint.Render("espacio conmutar · esc cerrar")
+		return m.styles.Faint.Render("space toggle · esc close")
 	}
 
 	// Sufijo global, siempre presente. En Cuentas se escribe en el input, así que
 	// 'q' no sale (se sale con ctrl+c).
-	suffix := "? ayuda · q salir"
+	suffix := "? help · q quit"
 	if m.active == tabAccounts {
-		suffix = "? ayuda · ctrl+c salir"
+		suffix = "? help · ctrl+c quit"
 	}
 
 	const sep = " · "
@@ -162,14 +162,14 @@ func (m Model) statusRight(avail int) string {
 func (m Model) hintItems() []string {
 	switch m.active {
 	case tabAccounts:
-		return []string{"enter detalle", "ctrl+d borrar", "ctrl+k paleta", "↑↓ mover"}
+		return []string{"enter detail", "ctrl+d delete", "ctrl+k palette", "↑↓ move"}
 	case tabBalances:
-		return []string{"y copiar", "o abrir", "s ordenar", "f filtrar", "e exportar", "r recargar", "ctrl+k paleta", "n redes", "↑↓ mover"}
+		return []string{"y copy", "o open", "s sort", "f filter", "e export", "r reload", "ctrl+k palette", "n networks", "↑↓ move"}
 	case tabTransactions:
 		if m.txDetailOpen {
-			return []string{"↑↓ desplazar", "esc cerrar"}
+			return []string{"↑↓ scroll", "esc close"}
 		}
-		return []string{"enter detalle", "y copiar", "o abrir", "s ordenar", "f filtrar red", "m cargar más", "e exportar", "r recargar", "ctrl+k paleta", "n redes", "↑↓ mover"}
+		return []string{"enter detail", "y copy", "o open", "s sort", "f filter net", "m load more", "e export", "r reload", "ctrl+k palette", "n networks", "↑↓ move"}
 	}
 	return nil
 }
@@ -225,13 +225,13 @@ func sinceShort(t time.Time) string {
 	d := time.Since(t)
 	switch {
 	case d < 2*time.Second:
-		return "ahora"
+		return "now"
 	case d < time.Minute:
-		return fmt.Sprintf("hace %ds", int(d.Seconds()))
+		return fmt.Sprintf("%ds ago", int(d.Seconds()))
 	case d < time.Hour:
-		return fmt.Sprintf("hace %dm", int(d.Minutes()))
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
 	default:
-		return fmt.Sprintf("hace %dh", int(d.Hours()))
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
 	}
 }
 

@@ -27,13 +27,13 @@ var (
 
 func main() {
 	fs := flag.NewFlagSet("chainview", flag.ExitOnError)
-	showVersion := fs.Bool("version", false, "muestra la versión y sale")
-	debugFlag := fs.Bool("debug", false, "arranca con el overlay de métricas/debug visible")
+	showVersion := fs.Bool("version", false, "print version and exit")
+	debugFlag := fs.Bool("debug", false, "start with the metrics/debug overlay visible")
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "chainview — monitor de wallets EVM en el terminal (watch-only).\n\n")
-		fmt.Fprintf(os.Stderr, "Uso:\n  chainview [opciones]\n\nOpciones:\n")
+		fmt.Fprintf(os.Stderr, "chainview — watch-only EVM wallet monitor in your terminal.\n\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n  chainview [options]\n\nOptions:\n")
 		fs.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nEntorno:\n  CHAINVIEW_DEBUG=1   equivale a --debug\n  ETHERSCAN_API_KEY   usa Etherscan para el historial (opcional)\n")
+		fmt.Fprintf(os.Stderr, "\nEnvironment:\n  CHAINVIEW_DEBUG=1   same as --debug\n  ETHERSCAN_API_KEY   use Etherscan for history (optional)\n")
 	}
 	// flag.ExitOnError ya gestiona -h/--help (imprime Usage y sale con código 0).
 	_ = fs.Parse(os.Args[1:])

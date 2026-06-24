@@ -113,14 +113,14 @@ func (c *Client) connect(chainID uint64) (*ethclient.Client, error) {
 
 	net, ok := c.networks[chainID]
 	if !ok {
-		return nil, fmt.Errorf("red desconocida: chain id %d", chainID)
+		return nil, fmt.Errorf("unknown network: chain id %d", chainID)
 	}
 
 	// ethclient.Dial no hace I/O de red para endpoints HTTP: solo prepara el
 	// cliente. La conexión real se establece en la primera llamada RPC.
 	conn, err := ethclient.Dial(net.RPCURL)
 	if err != nil {
-		return nil, fmt.Errorf("conectando a %s (chain id %d): %w", net.Name, chainID, err)
+		return nil, fmt.Errorf("connecting to %s (chain id %d): %w", net.Name, chainID, err)
 	}
 	c.conns[chainID] = conn
 	return conn, nil

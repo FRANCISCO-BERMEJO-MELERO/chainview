@@ -19,7 +19,7 @@ var ensRegistry = common.HexToAddress("0x00000000000C2E074eC69A0dFb2997BA6C7d2e1
 
 // errENSNotFound indica que no hay resolución (sin resolver, sin registro o sin
 // nombre inverso). Es un "no encontrado" normal, no un fallo de red.
-var errENSNotFound = errors.New("ENS: sin resolución")
+var errENSNotFound = errors.New("ENS: no resolution")
 
 // namehash implementa el algoritmo de EIP-137: convierte un nombre como
 // "vitalik.eth" en el nodo de 32 bytes con el que se le pregunta a ENS. Se
@@ -52,7 +52,7 @@ const ensABIJSON = `[
 var ensABI = func() abi.ABI {
 	a, err := abi.JSON(strings.NewReader(ensABIJSON))
 	if err != nil {
-		panic("chain: ABI de ENS inválida: " + err.Error())
+		panic("chain: invalid ENS ABI: " + err.Error())
 	}
 	return a
 }()

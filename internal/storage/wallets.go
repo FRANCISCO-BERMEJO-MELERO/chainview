@@ -31,7 +31,7 @@ type Wallets struct {
 func Load() (*Wallets, error) {
 	path, err := xdg.DataFile(dataPath)
 	if err != nil {
-		return nil, fmt.Errorf("resolviendo ruta de datos: %w", err)
+		return nil, fmt.Errorf("resolving data path: %w", err)
 	}
 	return loadFrom(path)
 }
@@ -45,12 +45,12 @@ func loadFrom(path string) (*Wallets, error) {
 		return w, nil // sin archivo: lista vacía
 	}
 	if err != nil {
-		return nil, fmt.Errorf("leyendo wallets: %w", err)
+		return nil, fmt.Errorf("reading wallets: %w", err)
 	}
 
 	var raw []string
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("parseando wallets %s: %w", path, err)
+		return nil, fmt.Errorf("parsing wallets %s: %w", path, err)
 	}
 	for _, s := range raw {
 		// Ignoramos entradas inválidas en disco en vez de romper el arranque.
@@ -76,7 +76,7 @@ func (w *Wallets) Len() int { return len(w.items) }
 // si la dirección no es una address EVM válida.
 func (w *Wallets) Add(s string) error {
 	if !common.IsHexAddress(s) {
-		return fmt.Errorf("dirección EVM inválida: %q", s)
+		return fmt.Errorf("invalid EVM address: %q", s)
 	}
 	addr := common.HexToAddress(s)
 	for _, existing := range w.items {
@@ -104,21 +104,21 @@ func (w *Wallets) Remove(addr common.Address) error {
 // fichero si el proceso muere a media escritura.
 func (w *Wallets) save() error {
 	if err := os.MkdirAll(filepath.Dir(w.path), 0o755); err != nil {
-		return fmt.Errorf("creando directorio de datos: %w", err)
+		return fmt.Errorf("creating data directory: %w", err)
 	}
 
 	// common.Address serializa a su string hex con checksum en JSON.
 	data, err := json.MarshalIndent(w.items, "", "  ")
 	if err != nil {
-		return fmt.Errorf("serializando wallets: %w", err)
+		return fmt.Errorf("serializing wallets: %w", err)
 	}
 
 	tmp := w.path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
-		return fmt.Errorf("escribiendo wallets: %w", err)
+		return fmt.Errorf("writing wallets: %w", err)
 	}
 	if err := os.Rename(tmp, w.path); err != nil {
-		return fmt.Errorf("renombrando wallets: %w", err)
+		return fmt.Errorf("renaming wallets: %w", err)
 	}
 	return nil
 }

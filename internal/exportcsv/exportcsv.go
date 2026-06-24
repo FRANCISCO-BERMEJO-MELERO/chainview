@@ -20,13 +20,13 @@ const Dir = "chainview-exports"
 // y las filas dadas. Devuelve la ruta escrita.
 func Write(dir, name string, header []string, rows [][]string) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", fmt.Errorf("creando carpeta de exportación: %w", err)
+		return "", fmt.Errorf("creating export folder: %w", err)
 	}
 	path := filepath.Join(dir, name)
 
 	f, err := os.Create(path)
 	if err != nil {
-		return "", fmt.Errorf("creando %s: %w", path, err)
+		return "", fmt.Errorf("creating %s: %w", path, err)
 	}
 	defer func() { _ = f.Close() }() // red de seguridad ante returns tempranos
 
@@ -35,11 +35,11 @@ func Write(dir, name string, header []string, rows [][]string) (string, error) {
 	records = append(records, header)
 	records = append(records, rows...)
 	if err := w.WriteAll(records); err != nil { // WriteAll hace Flush internamente
-		return "", fmt.Errorf("escribiendo CSV: %w", err)
+		return "", fmt.Errorf("writing CSV: %w", err)
 	}
 	// Cerramos explícitamente para no perder un error de escritura en el flush final.
 	if err := f.Close(); err != nil {
-		return "", fmt.Errorf("cerrando %s: %w", path, err)
+		return "", fmt.Errorf("closing %s: %w", path, err)
 	}
 	return path, nil
 }

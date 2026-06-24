@@ -42,6 +42,9 @@ var gasLabels = map[uint64]string{
 	chain.ChainArbitrum: "ARB",
 	chain.ChainBase:     "BASE",
 	chain.ChainOptimism: "OP",
+	chain.ChainPolygon:  "POL",
+	chain.ChainScroll:   "SCR",
+	chain.ChainLinea:    "LINEA",
 }
 
 func gasLabel(chainID uint64) string {
@@ -66,7 +69,7 @@ func gwei(wei *big.Int) string {
 // renderGasHeader pinta el gas + tendencia de cada red en una sola línea.
 func (m Model) renderGasHeader() string {
 	if len(m.gas) == 0 {
-		return m.styles.Faint.Render("⛽ gas: cargando…")
+		return m.styles.Faint.Render("⛽ gas: loading…")
 	}
 
 	parts := make([]string, 0, len(m.networks))

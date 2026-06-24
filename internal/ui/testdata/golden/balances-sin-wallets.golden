@@ -1,7 +1,7 @@
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ CHAINVIEW                                                  ⛽ gas: cargando… │
+│ CHAINVIEW                                                   ⛽ gas: loading… │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   Cuentas    Balances    Transacciones                                       │
+│   Accounts    Balances    Transactions                                       │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │                                                                              │
 │                                                                              │
@@ -9,9 +9,9 @@
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                ◯  Sin wallets                                │
+│                                ◯  No wallets                                 │
 │                                                                              │
-│               Añádelas en la pestaña Cuentas para ver balances               │
+│                 Add some in the Accounts tab to see balances                 │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -20,5 +20,5 @@
 │                                                                              │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ ⟳ cargando…   y copiar · o abrir · s ordenar · f filtrar · ? ayuda · q salir │
+│ ⟳ loading…  y copy · o open · s sort · f filter · e export · ? help · q quit │
 ╰──────────────────────────────────────────────────────────────────────────────╯

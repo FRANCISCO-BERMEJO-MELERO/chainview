@@ -17,17 +17,17 @@ func DescribeNetErr(err error) string {
 	}
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
-		return "tiempo de espera agotado"
+		return "request timed out"
 	case errors.Is(err, context.Canceled):
-		return "cancelado"
+		return "canceled"
 	case isRateLimit(err):
-		return "demasiadas peticiones (rate-limited)"
+		return "too many requests (rate-limited)"
 	case isDNSError(err):
-		return "no se pudo resolver el host"
+		return "could not resolve host"
 	case isConnRefused(err):
-		return "conexión rechazada"
+		return "connection refused"
 	case isTimeout(err):
-		return "tiempo de espera agotado"
+		return "request timed out"
 	default:
 		return err.Error()
 	}

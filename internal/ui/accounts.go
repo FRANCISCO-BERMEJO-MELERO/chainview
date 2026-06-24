@@ -55,7 +55,7 @@ func (m Model) updateAccounts(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// "vitalik.eth"), lo resolvemos primero y añadimos la address resultante.
 		if !common.IsHexAddress(val) && strings.Contains(val, ".") {
 			if m.ens == nil {
-				m.addErr = errors.New("resolución ENS no disponible")
+				m.addErr = errors.New("ENS resolution unavailable")
 				return m, nil
 			}
 			m.addErr = nil
@@ -147,7 +147,7 @@ func (m *Model) clampAccCursor() {
 // balances ya cargados (sin red nueva).
 func (m Model) walletDetailContent(addr common.Address) string {
 	var b strings.Builder
-	b.WriteString(m.styles.Balance.Render("Detalle de wallet") + "\n")
+	b.WriteString(m.styles.Balance.Render("Wallet detail") + "\n")
 	b.WriteString(m.displayName(addr) + "\n")
 	b.WriteString(m.styles.Faint.Render(addr.Hex()) + "\n\n")
 
@@ -162,7 +162,7 @@ func (m Model) walletDetailContent(addr common.Address) string {
 			m.styles.Balance.Render(chain.FormatFiat(total, m.fiatCurrency)) + "\n\n")
 	}
 	if len(results) == 0 {
-		b.WriteString(m.styles.Faint.Render("Sin balances cargados aún — entra en la pestaña Balances."))
+		b.WriteString(m.styles.Faint.Render("No balances loaded yet — open the Balances tab."))
 		return b.String()
 	}
 
@@ -184,7 +184,7 @@ func (m Model) walletDetailContent(addr common.Address) string {
 		}
 		b.WriteString("\n")
 	}
-	b.WriteString(m.styles.Faint.Render("y copiar address · o abrir en explorador · esc cerrar"))
+	b.WriteString(m.styles.Faint.Render("y copy address · o open in explorer · esc close"))
 	return b.String()
 }
 
@@ -202,19 +202,19 @@ func (m Model) renderAccounts() string {
 		b.WriteString("\n")
 	}
 	if m.resolvingName != "" {
-		b.WriteString(m.styles.Faint.Render("resolviendo " + m.resolvingName + "…"))
+		b.WriteString(m.styles.Faint.Render("resolving " + m.resolvingName + "…"))
 		b.WriteString("\n")
 	}
 	if m.confirmDel {
-		b.WriteString(m.styles.NoticeError.Render("¿Borrar "+m.displayName(m.confirmDelAddr)+"?") +
-			m.styles.Faint.Render("  ctrl+d confirma · esc cancela"))
+		b.WriteString(m.styles.NoticeError.Render("Delete "+m.displayName(m.confirmDelAddr)+"?") +
+			m.styles.Faint.Render("  ctrl+d confirm · esc cancel"))
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
 
 	addrs := m.wallets.List()
 	if len(addrs) == 0 {
-		b.WriteString(m.styles.Faint.Render("Sin wallets — escribe una address (0x…) o un nombre ENS y pulsa Enter."))
+		b.WriteString(m.styles.Faint.Render("No wallets — type an address (0x…) or ENS name and press Enter."))
 		return b.String()
 	}
 
@@ -233,6 +233,6 @@ func (m Model) renderAccounts() string {
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
-	b.WriteString(m.styles.Faint.Render(fmt.Sprintf("%d wallet(s) seguida(s)", len(addrs))))
+	b.WriteString(m.styles.Faint.Render(fmt.Sprintf("%d wallet(s) tracked", len(addrs))))
 	return b.String()
 }

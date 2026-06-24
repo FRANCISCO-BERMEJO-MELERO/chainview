@@ -69,10 +69,10 @@ func TestSortBalancesByValueDesc(t *testing.T) {
 }
 
 func TestSortName(t *testing.T) {
-	if balSortName(1) != "valor" || balSortName(0) != "" {
+	if balSortName(1) != "value" || balSortName(0) != "" {
 		t.Error("balSortName mal mapeado")
 	}
-	if txSortName(2) != "valor" || txSortName(0) != "fecha" {
+	if txSortName(2) != "value" || txSortName(0) != "date" {
 		t.Error("txSortName mal mapeado")
 	}
 }

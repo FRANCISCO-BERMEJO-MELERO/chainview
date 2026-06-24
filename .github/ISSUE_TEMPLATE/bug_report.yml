@@ -1,49 +1,49 @@
-name: Informe de bug
-description: Reporta un comportamiento incorrecto en chainview
+name: Bug report
+description: Report incorrect behavior in chainview
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Gracias por reportar. Rellena lo que puedas; cuanta más información, más
-        fácil será reproducirlo.
+        Thanks for reporting. Fill in what you can; the more detail, the easier
+        it is to reproduce.
   - type: textarea
-    id: que-pasa
+    id: what-happens
     attributes:
-      label: Qué ocurre
-      description: Describe el problema y qué esperabas que pasara en su lugar.
-      placeholder: Al pulsar X, la app...
+      label: What happens
+      description: Describe the problem and what you expected to happen instead.
+      placeholder: When I press X, the app...
     validations:
       required: true
   - type: textarea
-    id: pasos
+    id: steps
     attributes:
-      label: Pasos para reproducir
+      label: Steps to reproduce
       placeholder: |
-        1. Arranco chainview con...
-        2. Añado la wallet...
-        3. Pulso...
+        1. Start chainview with...
+        2. Add the wallet...
+        3. Press...
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Versión
-      description: Salida de `chainview --version`.
+      label: Version
+      description: Output of `chainview --version`.
       placeholder: chainview v1.0.0 (commit ..., ...)
     validations:
       required: true
   - type: input
-    id: entorno
+    id: environment
     attributes:
-      label: SO y terminal
+      label: OS and terminal
       placeholder: "Linux / kitty, macOS / iTerm2, Windows / Windows Terminal..."
     validations:
       required: true
   - type: textarea
     id: extra
     attributes:
-      label: Contexto adicional
-      description: Logs, salida de `--debug`, capturas o config relevante (sin claves privadas).
+      label: Additional context
+      description: Logs, `--debug` output, screenshots or relevant config (no private keys).
     validations:
       required: false

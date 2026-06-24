@@ -1,43 +1,43 @@
-# chainview — configuración de ejemplo
+# chainview — example configuration
 #
-# chainview funciona SIN configuración: cópialo solo si quieres cambiar algo.
-# Ubicación esperada (XDG):
+# chainview works WITHOUT configuration: copy this only if you want to change
+# something. Expected location (XDG):
 #   Linux/BSD : ~/.config/chainview/config.toml
 #   macOS     : ~/Library/Application Support/chainview/config.toml
 #
 #   cp config.example.toml ~/.config/chainview/config.toml
 
-# Cada cuántos segundos se refrescan los balances (polling). Por defecto: 15.
+# How often, in seconds, balances are refreshed (polling). Default: 15.
 refresh_seconds = 15
 
-# Moneda de valoración fiat de los saldos. Por defecto: usd.
-# (v1 solo soporta USD; más monedas llegarán en una versión posterior.)
+# Fiat valuation currency for balances. Default: usd.
+# (v1 only supports USD; more currencies will come in a later release.)
 fiat_currency = "usd"
 
-# Tema de color: "auto" (detecta el fondo del terminal), "dark" o "light".
-# Por defecto: auto. Puedes cambiarlo en caliente desde la app (Ctrl+K → Tema).
+# Color theme: "auto" (detects the terminal background), "dark" or "light".
+# Default: auto. You can switch it at runtime from the app (Ctrl+K → Theme).
 theme = "auto"
 
-# API key de Etherscan. OPCIONAL: por defecto el historial de transacciones se
-# obtiene de Blockscout SIN ninguna key. Si defines una key, chainview usará
-# Etherscan en su lugar. Tiene prioridad la variable de entorno ETHERSCAN_API_KEY.
-# etherscan_api_key = "TU_API_KEY"
+# Etherscan API key. OPTIONAL: by default transaction history comes from
+# Blockscout WITHOUT any key. If you set a key, chainview uses Etherscan instead.
+# The ETHERSCAN_API_KEY environment variable takes precedence.
+# etherscan_api_key = "YOUR_API_KEY"
 
-# Overrides de endpoint RPC por red. Por defecto se usan los RPC públicos de
-# publicnode.com (gratis, sin key, rate-limited). Apunta aquí tu propio endpoint
-# (Alchemy, Infura, nodo propio…) para más cuota. La clave es el slug de la red.
+# Per-network RPC endpoint overrides. By default the public publicnode.com RPCs
+# are used (free, keyless, rate-limited). Point here to your own endpoint
+# (Alchemy, Infura, your own node…) for more quota. The key is the network slug.
 [rpc]
-# ethereum = "https://eth-mainnet.g.alchemy.com/v2/TU_KEY"
-# arbitrum = "https://arb-mainnet.g.alchemy.com/v2/TU_KEY"
-# base     = "https://base-mainnet.g.alchemy.com/v2/TU_KEY"
-# optimism = "https://opt-mainnet.g.alchemy.com/v2/TU_KEY"
+# ethereum = "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY"
+# arbitrum = "https://arb-mainnet.g.alchemy.com/v2/YOUR_KEY"
+# base     = "https://base-mainnet.g.alchemy.com/v2/YOUR_KEY"
+# optimism = "https://opt-mainnet.g.alchemy.com/v2/YOUR_KEY"
 
-# Redes adicionales o personalizadas. Cada bloque [[network]] añade una red EVM
-# nueva (por chain_id) o sobreescribe una del catálogo por defecto. Solo los
-# campos que pongas se aplican; el resto se hereda de la red por defecto.
+# Additional or custom networks. Each [[network]] block adds a new EVM network
+# (by chain_id) or overrides one from the default catalog. Only the fields you
+# set are applied; the rest is inherited from the default network.
 #
-# Catálogo por defecto: Ethereum, Arbitrum One, Base, Optimism, Polygon, Scroll,
-# Linea. Para añadir, por ejemplo, BNB Chain:
+# Default catalog: Ethereum, Arbitrum One, Base, Optimism, Polygon, Scroll,
+# Linea. To add, for example, BNB Chain:
 #
 # [[network]]
 # key            = "bsc"
@@ -46,11 +46,11 @@ theme = "auto"
 # rpc_url        = "https://bsc-rpc.publicnode.com"
 # symbol         = "BNB"
 # explorer       = "https://bscscan.com"
-# blockscout_api = "https://bsc.blockscout.com/api"   # txs + tokens (opcional)
-# price_chain    = "bsc"                               # slug DefiLlama para tokens
-# native_coin_id = "binancecoin"                       # id CoinGecko del nativo
+# blockscout_api = "https://bsc.blockscout.com/api"   # txs + tokens (optional)
+# price_chain    = "bsc"                               # DefiLlama slug for tokens
+# native_coin_id = "binancecoin"                       # CoinGecko id of the native coin
 #
-# Para sobreescribir solo el RPC de una red existente basta el chain_id:
+# To override just the RPC of an existing network the chain_id is enough:
 # [[network]]
 # chain_id = 137
-# rpc_url  = "https://polygon-mainnet.g.alchemy.com/v2/TU_KEY"
+# rpc_url  = "https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY"

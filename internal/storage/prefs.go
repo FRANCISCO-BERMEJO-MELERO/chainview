@@ -76,7 +76,7 @@ func (p *Prefs) SetEnabledChains(ids []uint64) error {
 func LoadPrefs() (*Prefs, error) {
 	path, err := xdg.DataFile(prefsPath)
 	if err != nil {
-		return nil, fmt.Errorf("resolviendo ruta de preferencias: %w", err)
+		return nil, fmt.Errorf("resolving preferences path: %w", err)
 	}
 	return loadPrefsFrom(path)
 }
@@ -90,10 +90,10 @@ func loadPrefsFrom(path string) (*Prefs, error) {
 		return p, nil // sin archivo: valores por defecto
 	}
 	if err != nil {
-		return nil, fmt.Errorf("leyendo preferencias: %w", err)
+		return nil, fmt.Errorf("reading preferences: %w", err)
 	}
 	if err := json.Unmarshal(data, p); err != nil {
-		return nil, fmt.Errorf("parseando preferencias %s: %w", path, err)
+		return nil, fmt.Errorf("parsing preferences %s: %w", path, err)
 	}
 	return p, nil
 }
@@ -111,20 +111,20 @@ func (p *Prefs) save() error {
 		return nil // Prefs sin ruta (p.ej. en tests): no persiste
 	}
 	if err := os.MkdirAll(filepath.Dir(p.path), 0o755); err != nil {
-		return fmt.Errorf("creando directorio de datos: %w", err)
+		return fmt.Errorf("creating data directory: %w", err)
 	}
 
 	data, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
-		return fmt.Errorf("serializando preferencias: %w", err)
+		return fmt.Errorf("serializing preferences: %w", err)
 	}
 
 	tmp := p.path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
-		return fmt.Errorf("escribiendo preferencias: %w", err)
+		return fmt.Errorf("writing preferences: %w", err)
 	}
 	if err := os.Rename(tmp, p.path); err != nil {
-		return fmt.Errorf("renombrando preferencias: %w", err)
+		return fmt.Errorf("renaming preferences: %w", err)
 	}
 	return nil
 }

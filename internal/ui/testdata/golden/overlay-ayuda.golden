@@ -1,48 +1,48 @@
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ CHAINVIEW                                                  ⛽ gas: cargando… │
+│ CHAINVIEW                                                   ⛽ gas: loading… │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   Cuentas    Balances    Transacciones                                       │
+│   Accounts    Balances    Transactions                                       │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ ╭─────────────────────────────────────────────────────────────────────────╮  │
-│ │                                                                         │  │
-│ │  ⌨  Atajos de teclado                                                   │  │
-│ │                                                                         │  │
-│ │  Global                                                                 │  │
-│ │    tab / shift+tab cambiar de pestaña                                   │  │
-│ │    ctrl+k          paleta de comandos (buscar/ir/acciones)              │  │
-│ │    ctrl+g          métricas / modo debug                                │  │
-│ │    n               elegir redes visibles                                │  │
-│ │    ?               abrir/cerrar esta ayuda                              │  │
-│ │    q               salir                                                │  │
-│ │    ctrl+c          salir                                                │  │
-│ │                                                                         │  │
-│ │  Cuentas                                                                │  │
-│ │    enter           ver el detalle de la wallet (o añadir si escribes)   │  │
-│ │    ctrl+d          borrar la wallet seleccionada (confirma con ctrl+d)  │  │
-│ │    ↑ ↓             moverse por la lista                                 │  │
-│ │                                                                         │  │
-│ │  Balances                                                               │  │
-│ │    ↑ ↓             moverse por la tabla                                 │  │
-│ │    f               alternar todas / la wallet seleccionada              │  │
-│ │    s / S           ordenar columna / invertir                           │  │
-│ │    y               copiar la address al portapapeles                    │  │
-│ │    o               abrir en el explorador de bloques                    │  │
-│ │    e               exportar saldos a CSV                                │  │
-│ │    r               recargar balances                                    │  │
-│ │                                                                         │  │
-│ │  Transacciones                                                          │  │
-│ │    ↑ ↓             moverse por la lista                                 │  │
-│ │    enter           ver el detalle de la tx                              │  │
-│ │    esc             cerrar el detalle                                    │  │
-│ │    f               filtrar por red (cicla)                              │  │
-│ │    s / S           ordenar columna / invertir                           │  │
-│ │    m               cargar más (página siguiente)                        │  │
-│ │    y               copiar el hash al portapapeles                       │  │
-│ │    o               abrir la tx en el explorador                         │  │
-│ │    e               exportar transacciones a CSV                         │  │
-│ │    r               recargar historial                                   │  │
-│ │                                                                         │  │
-│ ╰─────────────────────────────────────────────────────────────────────────╯  │
+│     ╭──────────────────────────────────────────────────────────────────╮     │
+│     │                                                                  │     │
+│     │  ⌨  Keyboard shortcuts                                           │     │
+│     │                                                                  │     │
+│     │  Global                                                          │     │
+│     │    tab / shift+tab switch tab                                    │     │
+│     │    ctrl+k          command palette (search/go/actions)           │     │
+│     │    ctrl+g          metrics / debug mode                          │     │
+│     │    n               choose visible networks                       │     │
+│     │    ?               toggle this help                              │     │
+│     │    q               quit                                          │     │
+│     │    ctrl+c          quit                                          │     │
+│     │                                                                  │     │
+│     │  Accounts                                                        │     │
+│     │    enter           view wallet detail (or add if typing)         │     │
+│     │    ctrl+d          delete selected wallet (confirm with ctrl+d)  │     │
+│     │    ↑ ↓             move through the list                         │     │
+│     │                                                                  │     │
+│     │  Balances                                                        │     │
+│     │    ↑ ↓             move through the table                        │     │
+│     │    f               toggle all / selected wallet                  │     │
+│     │    s / S           sort column / reverse                         │     │
+│     │    y               copy address to clipboard                     │     │
+│     │    o               open in block explorer                        │     │
+│     │    e               export balances to CSV                        │     │
+│     │    r               reload balances                               │     │
+│     │                                                                  │     │
+│     │  Transactions                                                    │     │
+│     │    ↑ ↓             move through the list                         │     │
+│     │    enter           view tx detail                                │     │
+│     │    esc             close detail                                  │     │
+│     │    f               filter by network (cycle)                     │     │
+│     │    s / S           sort column / reverse                         │     │
+│     │    m               load more (next page)                         │     │
+│     │    y               copy hash to clipboard                        │     │
+│     │    o               open tx in explorer                           │     │
+│     │    e               export transactions to CSV                    │     │
+│     │    r               reload history                                │     │
+│     │                                                                  │     │
+│     ╰──────────────────────────────────────────────────────────────────╯     │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ ⟳ cargando…                                                   ? · esc cerrar │
+│ ⟳ loading…                                                     ? · esc close │
 ╰──────────────────────────────────────────────────────────────────────────────╯

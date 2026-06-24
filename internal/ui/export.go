@@ -21,7 +21,7 @@ type exportDoneMsg struct {
 // balanceRows construye la cabecera y las filas CSV de la vista actual de
 // Balances (respeta el filtro todas/seleccionada).
 func (m Model) balanceRows() ([]string, [][]string) {
-	header := []string{"wallet", "ens", "chain_id", "red", "saldo", "simbolo", "error"}
+	header := []string{"wallet", "ens", "chain_id", "network", "balance", "symbol", "error"}
 	vis := m.visibleBalances()
 	rows := make([][]string, 0, len(vis))
 	for _, r := range vis {
@@ -48,8 +48,8 @@ func (m Model) balanceRows() ([]string, [][]string) {
 // Transacciones (respeta el filtro de red y todas las páginas ya cargadas).
 func (m Model) txRows() ([]string, [][]string) {
 	header := []string{
-		"chain_id", "red", "hash", "fecha_utc", "tipo", "de", "a",
-		"valor", "simbolo", "accion", "estado", "bloque", "gas_usado", "gas_price_gwei", "nonce",
+		"chain_id", "network", "hash", "date_utc", "type", "from", "to",
+		"value", "symbol", "action", "status", "block", "gas_used", "gas_price_gwei", "nonce",
 	}
 	vis := m.visibleTxs()
 	rows := make([][]string, 0, len(vis))
@@ -57,7 +57,7 @@ func (m Model) txRows() ([]string, [][]string) {
 		tx := row.tx
 		estado := "ok"
 		if !tx.Success {
-			estado = "fallida"
+			estado = "failed"
 		}
 		rows = append(rows, []string{
 			strconv.FormatUint(tx.ChainID, 10),
@@ -95,7 +95,7 @@ func exportCmd(name string, header []string, rows [][]string) tea.Cmd {
 // exportBalancesCmd exporta la vista actual de Balances a un CSV con fecha.
 func (m Model) exportBalancesCmd() tea.Cmd {
 	header, rows := m.balanceRows()
-	name := "saldos-" + exportcsv.Timestamp(time.Now()) + ".csv"
+	name := "balances-" + exportcsv.Timestamp(time.Now()) + ".csv"
 	return exportCmd(name, header, rows)
 }
 

@@ -47,7 +47,7 @@ const tokenABIJSON = `[
 var tokenABI = func() abi.ABI {
 	a, err := abi.JSON(strings.NewReader(tokenABIJSON))
 	if err != nil {
-		panic("chain: ABI de tokens inválida: " + err.Error())
+		panic("chain: invalid token ABI: " + err.Error())
 	}
 	return a
 }()

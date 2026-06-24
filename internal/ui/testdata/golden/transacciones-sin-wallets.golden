@@ -1,7 +1,7 @@
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ CHAINVIEW                                                  ⛽ gas: cargando… │
+│ CHAINVIEW                                                   ⛽ gas: loading… │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   Cuentas    Balances    Transacciones                                       │
+│   Accounts    Balances    Transactions                                       │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │                                                                              │
 │                                                                              │
@@ -9,9 +9,9 @@
 │                                                                              │
 │                                                                              │
 │                                                                              │
-│                                ◯  Sin wallets                                │
+│                                ◯  No wallets                                 │
 │                                                                              │
-│          Añádelas en la pestaña Cuentas para ver sus transacciones           │
+│            Add some in the Accounts tab to see their transactions            │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -20,5 +20,5 @@
 │                                                                              │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ ⟳ cargando…           enter detalle · y copiar · o abrir · ? ayuda · q salir │
+│ ⟳ loading…         enter detail · y copy · o open · s sort · ? help · q quit │
 ╰──────────────────────────────────────────────────────────────────────────────╯

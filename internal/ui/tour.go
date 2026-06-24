@@ -17,10 +17,10 @@ type tourStep struct {
 // tourSteps es el guion del tour: pocos pasos que señalan lo esencial.
 func tourSteps() []tourStep {
 	return []tourStep{
-		{"Pestañas", "Tienes tres pestañas: Cuentas, Balances y Transacciones.\nCambia entre ellas con tab / shift+tab."},
-		{"Paleta de comandos", "Pulsa ctrl+k en cualquier momento para buscar wallets,\nredes y acciones sin recordar atajos."},
-		{"Redes y tema", "n elige qué redes ver. El tema se adapta al fondo del\nterminal; puedes alternarlo con ctrl+k → «Tema»."},
-		{"Copiar y abrir", "En Balances y Transacciones, y copia el dato seleccionado\nal portapapeles y o lo abre en el explorador de bloques."},
+		{"Tabs", "There are three tabs: Accounts, Balances and Transactions.\nSwitch between them with tab / shift+tab."},
+		{"Command palette", "Press ctrl+k anytime to search wallets, networks\nand actions without memorizing shortcuts."},
+		{"Networks and theme", "n picks which networks to show. The theme adapts to the\nterminal background; toggle it with ctrl+k → \"Theme\"."},
+		{"Copy and open", "In Balances and Transactions, y copies the selected item\nto the clipboard and o opens it in the block explorer."},
 	}
 }
 
@@ -71,8 +71,8 @@ func (m Model) renderTour() string {
 	var b strings.Builder
 	b.WriteString(m.styles.Brand.Render("✦ "+s.title) + "\n\n")
 	b.WriteString(s.body + "\n\n")
-	b.WriteString(m.styles.Faint.Render(fmt.Sprintf("Paso %d/%d", m.tourStep+1, len(steps))))
-	b.WriteString(m.styles.Faint.Render("   ·   enter siguiente · esc saltar"))
+	b.WriteString(m.styles.Faint.Render(fmt.Sprintf("Step %d/%d", m.tourStep+1, len(steps))))
+	b.WriteString(m.styles.Faint.Render("   ·   enter next · esc skip"))
 
 	panel := m.styles.Panel.Render(b.String())
 	return lipgloss.Place(m.contentW, m.contentH, lipgloss.Center, lipgloss.Center, panel)
